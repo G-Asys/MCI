@@ -7,9 +7,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.min.js"></script>
+<!-- Librerías: primero la copia local (carpeta vendor/), si no está se usa el CDN -->
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/chart.umd.min.js"></script>
+<script src="vendor/pptxgen.bundle.min.js"></script>
+<script>
+(function(){var C='https://cdnjs.cloudflare.com/ajax/libs/';
+if(!window.XLSX)document.write('<script src="'+C+'xlsx/0.18.5/xlsx.full.min.js"><\/script>');
+if(!window.Chart)document.write('<script src="'+C+'Chart.js/4.4.1/chart.umd.min.js"><\/script>');
+if(!window.PptxGenJS)document.write('<script src="'+C+'pptxgenjs/3.12.0/pptxgen.bundle.min.js"><\/script>');})();
+</script>
 <style>
 :root{
   --ink:#12252B; --ink2:#0C181C; --paper:#F4F2EC; --card:#FFFFFF; --line:#E4E0D6;
@@ -702,7 +709,7 @@ const afterRender={__q:[]};
 function onDraw(view,fn){(afterRender[view]=afterRender[view]||[]).push(fn);}
 function destroyCharts(){Object.values(STATE.charts).forEach(c=>{try{c.destroy()}catch(e){}});STATE.charts={};}
 function mkChart(id,cfg){requestAnimationFrame(()=>{const el=$('#'+id);if(el)STATE.charts[id]=new Chart(el,cfg)});}
-Chart.defaults.font.family="Inter,system-ui,sans-serif";Chart.defaults.font.size=11.5;Chart.defaults.color="#6E7A7C";
+if(window.Chart){Chart.defaults.font.family="Inter,system-ui,sans-serif";Chart.defaults.font.size=11.5;Chart.defaults.color="#6E7A7C";}else{console.error("Chart.js no se pudo cargar: los gráficos no estarán disponibles.");}
 
 /* util renderers */
 function kpi(lab,val,sub,tag){return `<div class="kpi"><div class="lab">${lab}</div><div class="val num">${val}</div>${sub?`<div class="sub">${sub}</div>`:''}${tag?`<div class="tag ${tag.c}">${tag.t}</div>`:''}<div class="bar" style="width:${tag&&tag.w!=null?tag.w:0}%"></div></div>`}
