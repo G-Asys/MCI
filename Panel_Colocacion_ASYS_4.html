@@ -7,9 +7,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.min.js"></script>
+<!-- Librerías: primero la copia local (carpeta vendor/), si no está se usa el CDN -->
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/chart.umd.min.js"></script>
+<script src="vendor/pptxgen.bundle.min.js"></script>
+<script>
+(function(){var C='https://cdnjs.cloudflare.com/ajax/libs/';
+if(!window.XLSX)document.write('<script src="'+C+'xlsx/0.18.5/xlsx.full.min.js"><\/script>');
+if(!window.Chart)document.write('<script src="'+C+'Chart.js/4.4.1/chart.umd.min.js"><\/script>');
+if(!window.PptxGenJS)document.write('<script src="'+C+'pptxgenjs/3.12.0/pptxgen.bundle.min.js"><\/script>');})();
+</script>
 <style>
 :root{
   --ink:#12252B; --ink2:#0C181C; --paper:#F4F2EC; --card:#FFFFFF; --line:#E4E0D6;
@@ -190,9 +197,9 @@ td.b{font-weight:600}
   <div class="modal">
     <div class="mh"><h3>Metas — <span id="metaCtx"></span></h3><button id="metaX">✕</button></div>
     <div class="mb">
-      <div class="hint">Pegá la tabla de metas o subí un Excel. Columnas: <b>Supervisor · Empresa · Categoría · Producto · Ventas · FB</b>. Las filas de <i>Total</i> se ignoran. Se aplican al supervisor, mes y año seleccionados arriba.</div>
+      <div class="hint">Pegá la tabla de metas o subí un Excel. Columnas: <b>Sponsor · Campaña · Meta VT · Meta FB</b> (también acepta <b>Supervisor · Empresa · Categoría · Producto · Ventas · FB</b>). Podés copiar las celdas desde Excel y pegarlas. Los encabezados y las filas de <i>Total</i> se ignoran. Se aplican al supervisor, mes y año seleccionados arriba.</div>
       <div class="seg" style="margin-top:12px"><button data-mt="paste" class="on">Pegar tabla</button><button data-mt="file">Subir Excel</button></div>
-      <textarea id="metaText" placeholder="Ricardo B | BCR | Recurrente | AP Desempleo BCR | 42 | 311&#10;Ricardo B | BCR | Recurrente | Carretera BCR | 113 | 634&#10;…"></textarea>
+      <textarea id="metaText" placeholder="Sponsor&#9;Campaña&#9;Meta VTS&#9;Meta FB&#10;BCR&#9;AP Desempleo BCR&#9;45&#9;247,5&#10;BCR&#9;Carretera BCR&#9;125&#9;750&#10;…"></textarea>
       <label class="mdrop hidden" id="metaDrop">Hacé clic o arrastrá el Excel de metas aquí<input type="file" id="metaFile" accept=".xlsx,.xls" class="hidden"></label>
       <div id="metaPrev"></div>
     </div>
@@ -702,7 +709,7 @@ const afterRender={__q:[]};
 function onDraw(view,fn){(afterRender[view]=afterRender[view]||[]).push(fn);}
 function destroyCharts(){Object.values(STATE.charts).forEach(c=>{try{c.destroy()}catch(e){}});STATE.charts={};}
 function mkChart(id,cfg){requestAnimationFrame(()=>{const el=$('#'+id);if(el)STATE.charts[id]=new Chart(el,cfg)});}
-Chart.defaults.font.family="Inter,system-ui,sans-serif";Chart.defaults.font.size=11.5;Chart.defaults.color="#6E7A7C";
+if(window.Chart){Chart.defaults.font.family="Inter,system-ui,sans-serif";Chart.defaults.font.size=11.5;Chart.defaults.color="#6E7A7C";}else{console.error("Chart.js no se pudo cargar: los gráficos no estarán disponibles.");}
 
 /* util renderers */
 function kpi(lab,val,sub,tag){return `<div class="kpi"><div class="lab">${lab}</div><div class="val num">${val}</div>${sub?`<div class="sub">${sub}</div>`:''}${tag?`<div class="tag ${tag.c}">${tag.t}</div>`:''}<div class="bar" style="width:${tag&&tag.w!=null?tag.w:0}%"></div></div>`}
@@ -1435,50 +1442,72 @@ function noData(f){
 /* ============ META MODAL ============ */
 const TIPOS={'recurrente':'Recurrente','única':'Única','unica':'Única','asistencia':'Asistencia'};
 function normTipo(c){return TIPOS[norm(c).toLowerCase()]||norm(c);}
-function num(x){const n=parseFloat(String(x).replace(/[^\d.\-]/g,''));return isNaN(n)?null:n;}
-
+// número tolerante a formato regional: "247,5" · "3.017,4" · "3,017.4" · "$1 200"
+function num(x){
+  if(x==null||x==='')return null; if(typeof x==='number')return isFinite(x)?x:null;
+  let t=String(x).replace(/[^\d.,\-]/g,''); if(!/\d/.test(t))return null;
+  const c=t.lastIndexOf(','),d=t.lastIndexOf('.');
+  if(c>=0&&d>=0){ t=c>d?t.replace(/\./g,'').replace(',','.'):t.replace(/,/g,''); }
+  else if(c>=0){ t=/^-?\d{1,3}(,\d{3})+$/.test(t)?t.replace(/,/g,''):t.replace(/,/g,'.'); }
+  else if((t.match(/\./g)||[]).length>1){ t=t.replace(/\./g,''); }
+  const n=parseFloat(t);return isNaN(n)?null:n;
+}
+/* Una fila de meta. Acepta:
+   Sponsor · Campaña · Meta VT · Meta FB
+   Supervisor · Sponsor · Campaña · Meta VT · Meta FB
+   Supervisor · Empresa · Categoría · Producto · Ventas · FB
+   La categoría es opcional: si falta se deduce del reporte importado. */
+function parseMetaCells(raw){
+  const cells=raw.map(c=>norm(c).replace(/\*\*/g,'').trim()).filter(c=>c!=='');
+  if(cells.length<3)return null;
+  if(cells.some(c=>/^(sub)?totale?s?\b/i.test(c)))return null;          // filas Total
+  const isNum=c=>/^[\s$₡\-]*[\d.,]+\s*%?$/.test(c);
+  let n=cells.length,fb=0,vt;
+  if(isNum(cells[n-1])&&n>=2&&isNum(cells[n-2])){vt=num(cells[n-2]);fb=num(cells[n-1])||0;n-=2;}
+  else if(isNum(cells[n-1])){vt=num(cells[n-1]);n-=1;}
+  else return null;                                                      // encabezado u otra fila de texto
+  if(vt==null)return null;
+  const txt=cells.slice(0,n);
+  let cat='';const ci=txt.findIndex(c=>TIPOS[norm(c).toLowerCase()]);
+  if(ci>=0){cat=txt[ci];txt.splice(ci,1);}
+  if(txt.length<2)return null;
+  const prod=txt[txt.length-1],emp=txt[txt.length-2];
+  return {emp:canonSp(emp),cat,prod,vt,fb};
+}
 function parseMetaText(text){
   const out=[];
   text.split(/\r?\n/).forEach(ln=>{
     if(!ln.trim()||/^\s*\|?\s*-{2,}/.test(ln))return;
-    let cells=ln.split(/\t|\|/).map(c=>c.replace(/\*\*/g,'').trim());
-    if(cells.length&&cells[0]==='')cells.shift();
-    if(cells.length&&cells[cells.length-1]==='')cells.pop();
-    if(cells.length<6)return;
-    const cat=norm(cells[2]).toLowerCase();
-    if(!TIPOS[cat])return;                       // ignora header y filas Total
-    const vt=num(cells[4]); if(vt==null)return;
-    out.push({emp:canonSp(cells[1]),cat:cells[2],prod:cells[3],vt,fb:num(cells[5])||0});
+    const cells=(ln.includes('\t')||ln.includes('|'))?ln.split(/\t|\|/):ln.split(/\s{2,}|;/);
+    const r=parseMetaCells(cells);if(r)out.push(r);
   });
   return out;
 }
-function parseMetaRows(json){ // desde Excel
-  const out=[];
-  const key=(o,names)=>{for(const k of Object.keys(o)){const kk=k.toLowerCase();if(names.some(n=>kk.includes(n)))return k;}return null;};
-  if(!json.length)return out;
-  const s=json[0];
-  const kEmp=key(s,['empresa','sponsor']),kCat=key(s,['categor','tipo']),kProd=key(s,['producto','campaña','campana']),kVt=key(s,['venta','meta vt','vt']),kFb=key(s,['fb','factur']);
-  json.forEach(o=>{
-    const cat=norm(o[kCat]).toLowerCase(); if(!TIPOS[cat])return;
-    const vt=num(o[kVt]); if(vt==null)return;
-    out.push({emp:canonSp(o[kEmp]),cat:o[kCat],prod:o[kProd],vt,fb:num(o[kFb])||0});
-  });
-  return out;
+function parseMetaRows(aoa){ // desde Excel (matriz de filas)
+  const out=[];(aoa||[]).forEach(row=>{const r=parseMetaCells(row||[]);if(r)out.push(r);});return out;
+}
+// categoría por producto, aprendida del reporte de colocación importado
+function tipoPorProducto(){
+  const cnt={};(STATE.rows||[]).forEach(r=>{if(!r.prod||!r.tipo)return;const k=hkey(r.prod),t=normTipo(r.tipo);(cnt[k]=cnt[k]||{})[t]=(cnt[k][t]||0)+1;});
+  const M={};Object.keys(cnt).forEach(k=>{M[k]=Object.entries(cnt[k]).sort((x,y)=>y[1]-x[1])[0][0];});return M;
 }
 function aggMeta(rows){
-  const bySp={},byTipo={};
+  const bySp={},byTipo={};let TP=null,sinCat=0;
   rows.forEach(r=>{
     (bySp[r.emp]=bySp[r.emp]||{vt:0,fb:0});bySp[r.emp].vt+=r.vt;bySp[r.emp].fb+=r.fb;
-    const t=normTipo(r.cat);(byTipo[t]=byTipo[t]||{vt:0,fb:0});byTipo[t].vt+=r.vt;byTipo[t].fb+=r.fb;
+    let t=r.cat?normTipo(r.cat):'';
+    if(!t){TP=TP||tipoPorProducto();t=TP[hkey(r.prod)]||(/asisten/i.test(r.prod)?'Asistencia':'');}
+    if(!t){sinCat++;t='Sin categoría';}
+    (byTipo[t]=byTipo[t]||{vt:0,fb:0});byTipo[t].vt+=r.vt;byTipo[t].fb+=r.fb;
   });
-  return {bySp,byTipo,n:rows.length,totVt:rows.reduce((s,r)=>s+r.vt,0)};
+  return {bySp,byTipo,n:rows.length,sinCat,totVt:rows.reduce((s,r)=>s+r.vt,0),totFb:rows.reduce((s,r)=>s+r.fb,0)};
 }
 let META_STAGE=null;
 function showMetaPrev(agg){
   if(!agg||!agg.n){$('#metaPrev').innerHTML='<span class="neg">No se reconocieron filas de detalle. Revisá el formato.</span>';META_STAGE=null;return;}
   META_STAGE=agg;
   const sps=Object.keys(agg.bySp).sort();
-  $('#metaPrev').innerHTML=`<div class="metaok">✔ ${agg.n} productos · meta total ${fmt(agg.totVt)} pólizas</div>
+  $('#metaPrev').innerHTML=`<div class="metaok">✔ ${agg.n} productos · meta total ${fmt(agg.totVt)} pólizas · $${fmt(agg.totFb)} FB</div>${agg.sinCat?`<p class="hint" style="margin-top:8px">${agg.sinCat} producto(s) sin categoría (Recurrente/Única/Asistencia): cuentan en la meta por sponsor y en el total, pero no en la meta por tipo.</p>`:''}
     <table style="margin-top:10px"><thead><tr><th>Sponsor</th><th>Meta VT</th><th>Meta FB</th></tr></thead><tbody>
     ${sps.map(s=>`<tr><td class="b"><span class="sdot" style="background:${spcol(s)}"></span>${s}</td><td class="num b">${fmt(agg.bySp[s].vt)}</td><td class="num">$${fmt(agg.bySp[s].fb)}</td></tr>`).join('')}
     </tbody></table>`;
@@ -1494,7 +1523,7 @@ $$('#metaModal .seg button').forEach(b=>b.onclick=()=>{$$('#metaModal .seg butto
   const paste=b.dataset.mt==='paste';$('#metaText').classList.toggle('hidden',!paste);$('#metaDrop').classList.toggle('hidden',paste);});
 $('#metaText').addEventListener('input',()=>showMetaPrev(aggMeta(parseMetaText($('#metaText').value))));
 $('#metaFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();
-  rd.onload=ev=>{try{const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});const js=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:null});showMetaPrev(aggMeta(parseMetaRows(js)));}catch(err){$('#metaPrev').innerHTML='<span class="neg">Error: '+err.message+'</span>';}};
+  rd.onload=ev=>{try{const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});let rows=[];wb.SheetNames.some(n=>{rows=parseMetaRows(XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null}));return rows.length>0;});showMetaPrev(aggMeta(rows));}catch(err){$('#metaPrev').innerHTML='<span class="neg">Error: '+err.message+'</span>';}};
   rd.readAsArrayBuffer(f);});
 $('#metaSave').onclick=()=>{ if(!META_STAGE){$('#metaPrev').innerHTML='<span class="neg">No hay meta para guardar. Pegá la tabla o subí el Excel.</span>';return;}
   const f=F();STATE.metaOv[metaKey(f)]=META_STAGE;persistOv();mm.classList.add('hidden');$('#metaText').value='';render(); };
