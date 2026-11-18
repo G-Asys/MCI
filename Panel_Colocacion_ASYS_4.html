@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Panel de Colocación · ASYS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.min.js"></script>
+<style>
+:root{
+  --ink:#12252B; --ink2:#0C181C; --paper:#F4F2EC; --card:#FFFFFF; --line:#E4E0D6;
+  --text:#1A2A2E; --mute:#6E7A7C; --accent:#1F6F6B; --accent2:#2A8A84; --gold:#B7862B;
+  --pos:#2F7D52; --neg:#B0473F; --flat:#94908A; --chip:#EEEAE0;
+  --shadow:0 1px 2px rgba(18,37,43,.04),0 8px 24px rgba(18,37,43,.06);
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--paper);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+h1,h2,h3{margin:0;font-weight:600}
+button{font-family:inherit;cursor:pointer}
+select,input{font-family:inherit;font-size:13px}
+
+/* Layout */
+#app{display:grid;grid-template-columns:230px 1fr;min-height:100%}
+#side{background:var(--ink);color:#CDD9DB;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+#side .brand{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.07)}
+#side .brand .mark{font-family:Fraunces,Georgia,serif;font-size:20px;font-weight:600;color:#fff;letter-spacing:.2px;line-height:1.1}
+#side .brand .sub{font-size:11px;color:#7F9498;margin-top:4px;letter-spacing:.3px}
+#nav{padding:12px 10px;display:flex;flex-direction:column;gap:2px;flex:1;overflow:auto}
+.navitem{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:#AFC0C3;font-weight:500;font-size:13.5px;border:0;background:transparent;text-align:left;width:100%;transition:background .12s,color .12s}
+.navitem svg{width:17px;height:17px;flex:0 0 17px;opacity:.85}
+.navitem:hover{background:rgba(255,255,255,.05);color:#EAF1F2}
+.navitem.on{background:var(--accent);color:#fff}
+.navitem.on svg{opacity:1}
+#side .foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.07);font-size:10.5px;color:#5E7478;letter-spacing:.2px}
+
+#main{display:flex;flex-direction:column;min-width:0}
+#top{position:sticky;top:0;z-index:20;background:rgba(244,242,236,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+#top .vtitle{font-family:Fraunces,Georgia,serif;font-size:19px;font-weight:600;margin-right:auto;letter-spacing:.2px}
+.fgrp{display:flex;align-items:center;gap:6px}
+.fgrp label{font-size:11px;color:var(--mute);font-weight:600;letter-spacing:.2px}
+.ctrl{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;color:var(--text);min-width:54px;box-shadow:var(--shadow)}
+.ctrl:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.winput{width:58px}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:9px;padding:9px 15px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:8px;box-shadow:var(--shadow)}
+.btn:hover{background:var(--accent2)}
+.btn.ghost{background:var(--card);color:var(--text);border:1px solid var(--line)}
+.btn.ghost:hover{background:#fff;border-color:var(--accent)}
+
+#view{padding:22px;max-width:1400px;width:100%}
+.hidden{display:none!important}
+
+/* Empty state */
+#empty{min-height:calc(100vh - 120px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
+#empty .big{font-family:Fraunces,Georgia,serif;font-size:clamp(30px,5vw,48px);font-weight:600;line-height:1.05;max-width:16ch;margin-bottom:14px}
+#empty .lede{color:var(--mute);max-width:52ch;margin-bottom:30px;font-size:15px}
+.drop{background:var(--card);border:1.5px dashed var(--line);border-radius:18px;padding:40px 46px;display:flex;flex-direction:column;align-items:center;gap:16px;transition:border-color .15s,background .15s;box-shadow:var(--shadow)}
+.drop.hov{border-color:var(--accent);background:#fff}
+.drop .ic{width:52px;height:52px;border-radius:14px;background:var(--chip);display:grid;place-items:center;color:var(--accent)}
+.drop .hint{font-size:12px;color:var(--mute)}
+
+/* Cards / grid */
+.grid{display:grid;gap:16px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 17px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.kpi .lab{font-size:11.5px;color:var(--mute);font-weight:600;letter-spacing:.3px;text-transform:none;display:flex;align-items:center;gap:6px}
+.kpi .val{font-family:Fraunces,Georgia,serif;font-size:30px;font-weight:600;margin-top:7px;letter-spacing:.3px}
+.kpi .sub{font-size:12px;color:var(--mute);margin-top:3px}
+.kpi .tag{position:absolute;top:14px;right:14px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
+.tag.up{background:#E7F1EB;color:var(--pos)} .tag.dn{background:#F6E9E7;color:var(--neg)} .tag.fl{background:#EEEFEA;color:var(--flat)}
+.kpi .bar{position:absolute;left:0;bottom:0;height:3px;background:var(--accent)}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+.panel>.ph{padding:14px 17px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.panel>.ph h3{font-size:14.5px;font-weight:600}
+.panel>.ph .note{font-size:11.5px;color:var(--mute);margin-left:auto}
+.panel>.pb{padding:15px 17px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.three{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+@media(max-width:900px){.two,.three{grid-template-columns:1fr}}
+
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 11px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{font-size:11px;color:var(--mute);font-weight:700;letter-spacing:.3px;background:#FBFAF6;position:sticky;top:0}
+tbody tr:hover{background:#FBFAF6}
+tbody tr:last-child td{border-bottom:0}
+td.b{font-weight:600}
+.twrap{max-height:460px;overflow:auto}
+.sdot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+.pos{color:var(--pos);font-weight:600}.neg{color:var(--neg);font-weight:600}.flat{color:var(--flat);font-weight:600}
+.arrow{font-weight:700}
+.mini{height:7px;background:var(--chip);border-radius:5px;overflow:hidden;min-width:60px;display:inline-block;width:100%;vertical-align:middle}
+.mini>i{display:block;height:100%;border-radius:5px;background:var(--accent)}
+.trow-tot td{background:#F3F5F1;font-weight:700;border-top:2px solid var(--line)}
+.chartbox{position:relative;height:300px}
+.chartbox.sm{height:240px}
+.badge{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--chip);color:var(--mute)}
+.verdict{padding:13px 15px;border-radius:11px;font-size:13px;line-height:1.5;display:flex;gap:10px;align-items:flex-start}
+.verdict.good{background:#E7F1EB;color:#1E5638}.verdict.bad{background:#F6E9E7;color:#7C3029}.verdict.neu{background:#EEF0EB;color:#4A4F48}
+.pill{display:inline-flex;gap:6px;align-items:center;font-size:11px;font-weight:600;color:var(--mute);background:var(--chip);padding:4px 9px;border-radius:20px}
+.seg{display:inline-flex;background:var(--chip);border-radius:9px;padding:3px}
+.seg button{border:0;background:transparent;padding:6px 12px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--mute)}
+.seg button.on{background:var(--card);color:var(--text);box-shadow:var(--shadow)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--mute);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.scroll-x{overflow-x:auto}
+.spinner{width:20px;height:20px;border:3px solid var(--chip);border-top-color:var(--accent);border-radius:50%;animation:spin .9s linear infinite;display:inline-block;vertical-align:-5px;margin-right:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+#chips{display:none!important}
+#top .fgrp{display:none}
+.chipset{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.chipset .cl{font-size:10.5px;font-weight:700;color:var(--mute);letter-spacing:.4px;text-transform:uppercase;margin-right:2px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--text);padding:5px 11px;border-radius:20px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all .12s}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip .cdot{width:8px;height:8px;border-radius:3px}
+.chip-sep{width:1px;height:22px;background:var(--line)}
+.hl{background:linear-gradient(transparent 60%, #F1E6C9 0)}
+/* meta modal */
+.ovl{position:fixed;inset:0;background:rgba(12,24,28,.5);backdrop-filter:blur(3px);z-index:100;display:grid;place-items:center;padding:20px}
+.modal{background:var(--card);border-radius:16px;box-shadow:0 20px 60px rgba(12,24,28,.35);width:min(640px,96vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.modal .mh{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.modal .mh h3{font-family:Fraunces,Georgia,serif;font-size:18px}
+.modal .mh #metaCtx{color:var(--gold)}
+.modal .mh button{margin-left:auto;border:0;background:var(--chip);width:30px;height:30px;border-radius:8px;font-size:15px;color:var(--mute)}
+.modal .mb{padding:18px 20px;overflow:auto}
+.modal .mf{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+#metaText{width:100%;height:190px;border:1px solid var(--line);border-radius:10px;padding:11px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize:vertical;margin-top:12px;color:var(--text)}
+#metaText:focus{outline:2px solid var(--gold);outline-offset:-1px}
+.mdrop{margin-top:12px;border:1.5px dashed var(--line);border-radius:12px;padding:26px;text-align:center;color:var(--mute);cursor:pointer}
+.mdrop:hover{border-color:var(--gold);color:var(--text)}
+#metaPrev{margin-top:12px;font-size:12.5px}
+.metaok{background:#E7F1EB;color:#1E5638;padding:9px 12px;border-radius:9px;font-weight:600}
+.metaov-on{background:var(--gold)!important;color:#fff!important}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <div class="brand">
+      <div class="mark">Colocación</div>
+      <div class="sub" id="brandsub">ASYS · Panel de Mando</div>
+    </div>
+    <nav id="nav"></nav>
+    <div class="foot" id="side-foot">ASYS / Grupo Internacional de Seguros<br><span id="saveInfo" style="opacity:.85"></span></div>
+  </aside>
+  <div id="main">
+    <div id="top">
+      <div class="vtitle" id="vtitle">Resumen</div>
+      <div class="fgrp"><label>Supervisor</label><select id="fSup" class="ctrl"></select></div>
+      <div class="fgrp"><label>Año</label><select id="fAnio" class="ctrl"></select></div>
+      <div class="fgrp"><label>Mes</label><select id="fMes" class="ctrl"></select></div>
+      <div class="fgrp"><label>Días háb.</label><input id="fDH" class="ctrl winput num" type="number" value="21" min="1"></div>
+      <div class="fgrp"><label>Días tr.</label><input id="fDT" class="ctrl winput num" type="number" value="9" min="0"></div>
+      <span id="hoy" class="pill" title="El año, mes y días se calculan automáticamente según hoy"></span>
+      <button class="btn" id="btnMeta" style="background:var(--gold)">Meta</button>
+      <button class="btn ghost" id="btnExport">Exportar</button>
+      <button class="btn ghost" id="btnPPT">PPT</button>
+      <button class="btn ghost" id="btnImport2">Importar</button>
+    </div>
+    <div id="chips" class="hidden"></div>
+    <div id="view">
+      <!-- Empty -->
+      <div id="empty">
+        <div class="big">Tu colocación, leída al instante.</div>
+        <div class="lede">Importá el reporte de colocación del mes. La plataforma arma tus MCIs y KPIs —ritmo por sponsor, cobertura de sucursales, caídas, comparativos y proyección— para decidir qué trabajar.</div>
+        <label class="drop" id="drop">
+          <div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 16V4M12 4l-4 4M12 4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg></div>
+          <div><b>Importar reporte de colocación</b></div>
+          <div class="hint">Arrastrá el archivo .xlsx aquí o hacé clic para elegirlo</div>
+          <input id="file" type="file" accept=".xlsx,.xls" class="hidden">
+        </label>
+        <div id="loadmsg" class="hint" style="margin-top:16px;color:var(--mute)"></div>
+      </div>
+      <!-- Dynamic content -->
+      <div id="content" class="hidden"></div>
+    </div>
+  </div>
+</div>
+<script>window.REF = {"meta_sponsor": [["Jacqueline V", "abril", "2026", "BCR", "565", "5497"], ["Jeffrey V", "abril", "2026", "BCR", "780", "7759"], ["Noelia M", "abril", "2026", "BCR", "685", "6637"], ["Ricardo B", "abril", "2026", "BCR", "415", "3909"], ["Ronald A", "abril", "2026", "BCR", "617", "6102"], ["Jacqueline V", "abril", "2026", "BNCR", "387", "3913"], ["Jeffrey V", "abril", "2026", "BNCR", "470", "4817"], ["Noelia M", "abril", "2026", "BNCR", "410", "4123"], ["Ricardo B", "abril", "2026", "BNCR", "140", "1380"], ["Ronald A", "abril", "2026", "BNCR", "185", "1789"], ["Jacqueline V", "abril", "2026", "BP", "30", "270"], ["Jeffrey V", "abril", "2026", "BP", "30", "270"], ["Jimmy F", "abril", "2026", "BP", "365", "2280"], ["Noelia M", "abril", "2026", "BP", "25", "240"], ["Ricardo B", "abril", "2026", "BP", "30", "270"], ["Ronald A", "abril", "2026", "BP", "25", "240"], ["Jacqueline V", "abril", "2026", "COOPEANDE", "10", "92"], ["Jeffrey V", "abril", "2026", "COOPEANDE", "10", "92"], ["Noelia M", "abril", "2026", "COOPEANDE", "10", "92"], ["Ricardo B", "abril", "2026", "COOPEANDE", "10", "92"], ["Ronald A", "abril", "2026", "COOPEANDE", "10", "92"], ["Jacqueline V", "abril", "2026", "COOPENAE", "80", "641"], ["Jeffrey V", "abril", "2026", "COOPENAE", "60", "470"], ["Noelia M", "abril", "2026", "COOPENAE", "50", "395"], ["Ricardo B", "abril", "2026", "COOPENAE", "61", "484"], ["Ronald A", "abril", "2026", "COOPENAE", "55", "430"], ["Jacqueline V", "abril", "2026", "PURDY", "10", "110"], ["Jeffrey V", "abril", "2026", "PURDY", "6", "66"], ["Noelia M", "abril", "2026", "PURDY", "10", "110"], ["Ricardo B", "abril", "2026", "PURDY", "10", "110"], ["Ronald A", "abril", "2026", "PURDY", "10", "110"], ["Jacqueline V", "agosto", "2026", "BCR", "720", "5664"], ["Jeffrey V", "agosto", "2026", "BCR", "935", "7927"], ["Noelia M", "agosto", "2026", "BCR", "840", "6804"], ["Ricardo B", "agosto", "2026", "BCR", "570", "4077"], ["Ronald A", "agosto", "2026", "BCR", "772", "6270"], ["Jacqueline V", "agosto", "2026", "BNCR", "465", "4710"], ["Jeffrey V", "agosto", "2026", "BNCR", "535", "5507"], ["Noelia M", "agosto", "2026", "BNCR", "490", "4963"], ["Ricardo B", "agosto", "2026", "BNCR", "215", "2160"], ["Ronald A", "agosto", "2026", "BNCR", "255", "2508"], ["Jacqueline V", "agosto", "2026", "BP", "20", "210"], ["Jeffrey V", "agosto", "2026", "BP", "85", "705"], ["Jimmy F", "agosto", "2026", "BP", "440", "3180"], ["Noelia M", "agosto", "2026", "BP", "85", "705"], ["Ricardo B", "agosto", "2026", "BP", "85", "705"], ["Ronald A", "agosto", "2026", "BP", "85", "705"], ["Jacqueline V", "agosto", "2026", "COOPEANDE", "10", "92"], ["Jeffrey V", "agosto", "2026", "COOPEANDE", "10", "92"], ["Noelia M", "agosto", "2026", "COOPEANDE", "10", "92"], ["Ricardo B", "agosto", "2026", "COOPEANDE", "10", "92"], ["Ronald A", "agosto", "2026", "COOPEANDE", "10", "92"], ["Jacqueline V", "agosto", "2026", "COOPENAE", "80", "641"], ["Jeffrey V", "agosto", "2026", "COOPENAE", "60", "470"], ["Noelia M", "agosto", "2026", "COOPENAE", "50", "395"], ["Ricardo B", "agosto", "2026", "COOPENAE", "61", "484"], ["Ronald A", "agosto", "2026", "COOPENAE", "55", "430"], ["Jacqueline V", "agosto", "2026", "PURDY", "10", "110"], ["Jeffrey V", "agosto", "2026", "PURDY", "6", "66"], ["Noelia M", "agosto", "2026", "PURDY", "10", "110"], ["Ricardo B", "agosto", "2026", "PURDY", "10", "110"], ["Ronald A", "agosto", "2026", "PURDY", "10", "110"], ["Jacqueline V", "enero", "2026", "BCR", "565", "5497"], ["Jeffrey V", "enero", "2026", "BCR", "780", "7759"], ["Noelia M", "enero", "2026", "BCR", "685", "6637"], ["Ricardo B", "enero", "2026", "BCR", "415", "3909"], ["Ronald A", "enero", "2026", "BCR", "617", "6102"], ["Jacqueline V", "enero", "2026", "BNCR", "387", "3913"], ["Jeffrey V", "enero", "2026", "BNCR", "470", "4817"], ["Noelia M", "enero", "2026", "BNCR", "410", "4123"], ["Ricardo B", "enero", "2026", "BNCR", "140", "1380"], ["Ronald A", "enero", "2026", "BNCR", "185", "1789"], ["Jacqueline V", "enero", "2026", "BP", "30", "270"], ["Jeffrey V", "enero", "2026", "BP", "30", "270"], ["Jimmy F", "enero", "2026", "BP", "365", "2280"], ["Noelia M", "enero", "2026", "BP", "25", "240"], ["Ricardo B", "enero", "2026", "BP", "30", "270"], ["Ronald A", "enero", "2026", "BP", "25", "240"], ["Jacqueline V", "enero", "2026", "COOPEANDE", "10", "92"], ["Jeffrey V", "enero", "2026", "COOPEANDE", "10", "92"], ["Noelia M", "enero", "2026", "COOPEANDE", "10", "92"], ["Ricardo B", "enero", "2026", "COOPEANDE", "10", "92"], ["Ronald A", "enero", "2026", "COOPEANDE", "10", "92"], ["Jacqueline V", "enero", "2026", "COOPENAE", "80", "641"], ["Jeffrey V", "enero", "2026", "COOPENAE", "60", "470"], ["Noelia M", "enero", "2026", "COOPENAE", "50", "395"], ["Ricardo B", "enero", "2026", "COOPENAE", "61", "484"], ["Ronald A", "enero", "2026", "COOPENAE", "55", "430"], ["Jacqueline V", "enero", "2026", "PURDY", "10", "110"], ["Jeffrey V", "enero", "2026", "PURDY", "6", "66"], ["Noelia M", "enero", "2026", "PURDY", "10", "110"], ["Ricardo B", "enero", "2026", "PURDY", "10", "110"], ["Ronald A", "enero", "2026", "PURDY", "10", "110"], ["Jacqueline V", "febrero", "2026", "BCR", "565", "5497"], ["Jeffrey V", "febrero", "2026", "BCR", "780", "7759"], ["Noelia M", "febrero", "2026", "BCR", "685", "6637"], ["Ricardo B", "febrero", "2026", "BCR", "415", "3909"], ["Ronald A", "febrero", "2026", "BCR", "617", "6102"], ["Jacqueline V", "febrero", "2026", "BNCR", "387", "3913"], ["Jeffrey V", "febrero", "2026", "BNCR", "470", "4817"], ["Noelia M", "febrero", "2026", "BNCR", "410", "4123"], ["Ricardo B", "febrero", "2026", "BNCR", "140", "1380"], ["Ronald A", "febrero", "2026", "BNCR", "185", "1789"], ["Jacqueline V", "febrero", "2026", "BP", "30", "270"], ["Jeffrey V", "febrero", "2026", "BP", "30", "270"], ["Jimmy F", "febrero", "2026", "BP", "365", "2280"], ["Noelia M", "febrero", "2026", "BP", "25", "240"], ["Ricardo B", "febrero", "2026", "BP", "30", "270"], ["Ronald A", "febrero", "2026", "BP", "25", "240"], ["Jacqueline V", "febrero", "2026", "COOPEANDE", "10", "92"], ["Jeffrey V", "febrero", "2026", "COOPEANDE", "10", "92"], ["Noelia M", "febrero", "2026", "COOPEANDE", "10", "92"], ["Ricardo B", "febrero", "2026", "COOPEANDE", "10", "92"], ["Ronald A", "febrero", "2026", "COOPEANDE", "10", "92"], ["Jacqueline V", "febrero", "2026", "COOPENAE", "80", "641"], ["Jeffrey V", "febrero", "2026", "COOPENAE", "60", "470"], ["Noelia M", "febrero", "2026", "COOPENAE", "50", "395"], ["Ricardo B", "febrero", "2026", "COOPENAE", "61", "484"], ["Ronald A", "febrero", "2026", "COOPENAE", "55", "430"], ["Jacqueline V", "febrero", "2026", "PURDY", "10", "110"], ["Jeffrey V", "febrero", "2026", "PURDY", "6", "66"], ["Noelia M", "febrero", "2026", "PURDY", "10", "110"], ["Ricardo B", "febrero", "2026", "PURDY", "10", "110"], ["Ronald A", "febrero", "2026", "PURDY", "10", "110"], ["Jacqueline V", "julio", "2026", "BCR", "568", "5566"], ["Jeffrey V", "julio", "2026", "BCR", "783", "7828"], ["Noelia M", "julio", "2026", "BCR", "688", "6706"], ["Ricardo B", "julio", "2026", "BCR", "418", "3978"], ["Ronald A", "julio", "2026", "BCR", "620", "6171"], ["Jacqueline V", "julio", "2026", "BNCR", "387", "3913"], ["Jeffrey V", "julio", "2026", "BNCR", "470", "4817"], ["Noelia M", "julio", "2026", "BNCR", "410", "4123"], ["Ricardo B", "julio", "2026", "BNCR", "140", "1380"], ["Ronald A", "julio", "2026", "BNCR", "185", "1789"], ["Jacqueline V", "julio", "2026", "BP", "43", "402"], ["Jeffrey V", "julio", "2026", "BP", "43", "402"], ["Jimmy F", "julio", "2026", "BP", "403", "2577"], ["Noelia M", "julio", "2026", "BP", "43", "402"], ["Ricardo B", "julio", "2026", "BP", "43", "402"], ["Ronald A", "julio", "2026", "BP", "43", "402"], ["Jacqueline V", "julio", "2026", "COOPEANDE", "10", "92"], ["Jeffrey V", "julio", "2026", "COOPEANDE", "10", "92"], ["Noelia M", "julio", "2026", "COOPEANDE", "10", "92"], ["Ricardo B", "julio", "2026", "COOPEANDE", "10", "92"], ["Ronald A", "julio", "2026", "COOPEANDE", "10", "92"], ["Jacqueline V", "julio", "2026", "COOPENAE", "80", "641"], ["Jeffrey V", "julio", "2026", "COOPENAE", "60", "470"], ["Noelia M", "julio", "2026", "COOPENAE", "50", "395"], ["Ricardo B", "julio", "2026", "COOPENAE", "61", "484"], ["Ronald A", "julio", "2026", "COOPENAE", "55", "430"], ["Jacqueline V", "julio", "2026", "PURDY", "10", "110"], ["Jeffrey V", "julio", "2026", "PURDY", "6", "66"], ["Noelia M", "julio", "2026", "PURDY", "10", "110"], ["Ricardo B", "julio", "2026", "PURDY", "10", "110"], ["Ronald A", "julio", "2026", "PURDY", "10", "110"], ["Jacqueline V", "junio", "2026", "BCR", "565", "5497"], ["Jeffrey V", "junio", "2026", "BCR", "780", "7759"], ["Noelia M", "junio", "2026", "BCR", "685", "6637"], ["Ricardo B", "junio", "2026", "BCR", "415", "3909"], ["Ronald A", "junio", "2026", "BCR", "617", "6102"], ["Jacqueline V", "junio", "2026", "BNCR", "387", "3913"], ["Jeffrey V", "junio", "2026", "BNCR", "470", "4817"], ["Noelia M", "junio", "2026", "BNCR", "410", "4123"], ["Ricardo B", "junio", "2026", "BNCR", "140", "1380"], ["Ronald A", "junio", "2026", "BNCR", "185", "1789"], ["Jacqueline V", "junio", "2026", "BP", "30", "270"], ["Jeffrey V", "junio", "2026", "BP", "30", "270"], ["Jimmy F", "junio", "2026", "BP", "365", "2280"], ["Noelia M", "junio", "2026", "BP", "25", "240"], ["Ricardo B", "junio", "2026", "BP", "30", "270"], ["Ronald A", "junio", "2026", "BP", "25", "240"], ["Jacqueline V", "junio", "2026", "COOPEANDE", "10", "92"], ["Jeffrey V", "junio", "2026", "COOPEANDE", "10", "92"], ["Noelia M", "junio", "2026", "COOPEANDE", "10", "92"], ["Ricardo B", "junio", "2026", "COOPEANDE", "10", "92"], ["Ronald A", "junio", "2026", "COOPEANDE", "10", "92"], ["Jacqueline V", "junio", "2026", "COOPENAE", "80", "641"], ["Jeffrey V", "junio", "2026", "COOPENAE", "60", "470"], ["Noelia M", "junio", "2026", "COOPENAE", "50", "395"], ["Ricardo B", "junio", "2026", "COOPENAE", "61", "484"], ["Ronald A", "junio", "2026", "COOPENAE", "55", "430"], ["Jacqueline V", "junio", "2026", "PURDY", "10", "110"], ["Jeffrey V", "junio", "2026", "PURDY", "6", "66"], ["Noelia M", "junio", "2026", "PURDY", "10", "110"], ["Ricardo B", "junio", "2026", "PURDY", "10", "110"], ["Ronald A", "junio", "2026", "PURDY", "10", "110"], ["Jacqueline V", "marzo", "2026", "BCR", "565", "5497"], ["Jeffrey V", "marzo", "2026", "BCR", "780", "7759"], ["Noelia M", "marzo", "2026", "BCR", "685", "6637"], ["Ricardo B", "marzo", "2026", "BCR", "415", "3909"], ["Ronald A", "marzo", "2026", "BCR", "617", "6102"], ["Jacqueline V", "marzo", "2026", "BNCR", "387", "3913"], ["Jeffrey V", "marzo", "2026", "BNCR", "470", "4817"], ["Noelia M", "marzo", "2026", "BNCR", "410", "4123"], ["Ricardo B", "marzo", "2026", "BNCR", "140", "1380"], ["Ronald A", "marzo", "2026", "BNCR", "185", "1789"], ["Jacqueline V", "marzo", "2026", "BP", "30", "270"], ["Jeffrey V", "marzo", "2026", "BP", "30", "270"], ["Jimmy F", "marzo", "2026", "BP", "365", "2280"], ["Noelia M", "marzo", "2026", "BP", "25", "240"], ["Ricardo B", "marzo", "2026", "BP", "30", "270"], ["Ronald A", "marzo", "2026", "BP", "25", "240"], ["Jacqueline V", "marzo", "2026", "COOPEANDE", "10", "92"], ["Jeffrey V", "marzo", "2026", "COOPEANDE", "10", "92"], ["Noelia M", "marzo", "2026", "COOPEANDE", "10", "92"], ["Ricardo B", "marzo", "2026", "COOPEANDE", "10", "92"], ["Ronald A", "marzo", "2026", "COOPEANDE", "10", "92"], ["Jacqueline V", "marzo", "2026", "COOPENAE", "80", "641"], ["Jeffrey V", "marzo", "2026", "COOPENAE", "60", "470"], ["Noelia M", "marzo", "2026", "COOPENAE", "50", "395"], ["Ricardo B", "marzo", "2026", "COOPENAE", "61", "484"], ["Ronald A", "marzo", "2026", "COOPENAE", "55", "430"], ["Jacqueline V", "marzo", "2026", "PURDY", "10", "110"], ["Jeffrey V", "marzo", "2026", "PURDY", "6", "66"], ["Noelia M", "marzo", "2026", "PURDY", "10", "110"], ["Ricardo B", "marzo", "2026", "PURDY", "10", "110"], ["Ronald A", "marzo", "2026", "PURDY", "10", "110"], ["Jacqueline V", "mayo", "2026", "BCR", "565", "5497"], ["Jeffrey V", "mayo", "2026", "BCR", "780", "7759"], ["Noelia M", "mayo", "2026", "BCR", "685", "6637"], ["Ricardo B", "mayo", "2026", "BCR", "415", "3909"], ["Ronald A", "mayo", "2026", "BCR", "617", "6102"], ["Jacqueline V", "mayo", "2026", "BNCR", "387", "3913"], ["Jeffrey V", "mayo", "2026", "BNCR", "470", "4817"], ["Noelia M", "mayo", "2026", "BNCR", "410", "4123"], ["Ricardo B", "mayo", "2026", "BNCR", "140", "1380"], ["Ronald A", "mayo", "2026", "BNCR", "185", "1789"], ["Jacqueline V", "mayo", "2026", "BP", "30", "270"], ["Jeffrey V", "mayo", "2026", "BP", "30", "270"], ["Jimmy F", "mayo", "2026", "BP", "365", "2280"], ["Noelia M", "mayo", "2026", "BP", "25", "240"], ["Ricardo B", "mayo", "2026", "BP", "30", "270"], ["Ronald A", "mayo", "2026", "BP", "25", "240"], ["Jacqueline V", "mayo", "2026", "COOPEANDE", "10", "92"], ["Jeffrey V", "mayo", "2026", "COOPEANDE", "10", "92"], ["Noelia M", "mayo", "2026", "COOPEANDE", "10", "92"], ["Ricardo B", "mayo", "2026", "COOPEANDE", "10", "92"], ["Ronald A", "mayo", "2026", "COOPEANDE", "10", "92"], ["Jacqueline V", "mayo", "2026", "COOPENAE", "80", "641"], ["Jeffrey V", "mayo", "2026", "COOPENAE", "60", "470"], ["Noelia M", "mayo", "2026", "COOPENAE", "50", "395"], ["Ricardo B", "mayo", "2026", "COOPENAE", "61", "484"], ["Ronald A", "mayo", "2026", "COOPENAE", "55", "430"], ["Jacqueline V", "mayo", "2026", "PURDY", "10", "110"], ["Jeffrey V", "mayo", "2026", "PURDY", "6", "66"], ["Noelia M", "mayo", "2026", "PURDY", "10", "110"], ["Ricardo B", "mayo", "2026", "PURDY", "10", "110"], ["Ronald A", "mayo", "2026", "PURDY", "10", "110"], ["Jacqueline V", "septiembre", "2026", "BCR", "887", "6531"], ["Jacqueline V", "septiembre", "2026", "BP", "133", "846"], ["Jacqueline V", "septiembre", "2026", "BNCR", "285", "2718"], ["Jacqueline V", "septiembre", "2026", "COOPENAE", "75", "571"], ["Jacqueline V", "septiembre", "2026", "MONIFAI", "0", "0"], ["Jacqueline V", "septiembre", "2026", "COOPEANDE", "20", "176"], ["Jacqueline V", "septiembre", "2026", "CREDIX", "0", "0"], ["Jacqueline V", "septiembre", "2026", "PURDY", "0", "0"], ["Jeffrey V", "septiembre", "2026", "BNCR", "600", "5805"], ["Jeffrey V", "septiembre", "2026", "BCR", "900", "6391"], ["Jeffrey V", "septiembre", "2026", "MONIFAI", "0", "0"], ["Jeffrey V", "septiembre", "2026", "COOPENAE", "60", "456"], ["Jeffrey V", "septiembre", "2026", "COOPEANDE", "20", "169"], ["Jeffrey V", "septiembre", "2026", "BP", "40", "335"], ["Jeffrey V", "septiembre", "2026", "CREDIX", "0", "0"], ["Jeffrey V", "septiembre", "2026", "PURDY", "10", "97"], ["Jimmy F", "septiembre", "2026", "BNCR", "530", "5552"], ["Jimmy F", "septiembre", "2026", "BCR", "565", "3704"], ["Jimmy F", "septiembre", "2026", "COOPENAE", "170", "1332"], ["Jimmy F", "septiembre", "2026", "CREDIX", "110", "874"], ["Jimmy F", "septiembre", "2026", "MONIFAI", "0", "0"], ["Jimmy F", "septiembre", "2026", "COOPEANDE", "15", "132"], ["Jimmy F", "septiembre", "2026", "BP", "15", "80"], ["Jimmy F", "septiembre", "2026", "PURDY", "30", "360"], ["Juan V", "septiembre", "2026", "BCR", "1084", "9290"], ["Juan V", "septiembre", "2026", "BNCR", "345", "3579"], ["Juan V", "septiembre", "2026", "MONIFAI", "0", "0"], ["Juan V", "septiembre", "2026", "CREDIX", "60", "508"], ["Juan V", "septiembre", "2026", "COOPENAE", "45", "363"], ["Juan V", "septiembre", "2026", "BP", "10", "56"], ["Juan V", "septiembre", "2026", "PURDY", "10", "133"], ["Juan V", "septiembre", "2026", "COOPEANDE", "10", "130"], ["Karen A", "septiembre", "2026", "BCR", "748", "5856"], ["Karen A", "septiembre", "2026", "BNCR", "340", "3566"], ["Karen A", "septiembre", "2026", "CREDIX", "80", "599"], ["Karen A", "septiembre", "2026", "COOPENAE", "100", "775"], ["Karen A", "septiembre", "2026", "BP", "30", "176"], ["Karen A", "septiembre", "2026", "MONIFAI", "0", "0"], ["Karen A", "septiembre", "2026", "COOPEANDE", "10", "93"], ["Karen A", "septiembre", "2026", "PURDY", "10", "107"], ["Michael R", "septiembre", "2026", "BCR", "767", "5625"], ["Michael R", "septiembre", "2026", "BP", "280", "1688"], ["Michael R", "septiembre", "2026", "BNCR", "285", "2896"], ["Michael R", "septiembre", "2026", "MONIFAI", "0", "0"], ["Michael R", "septiembre", "2026", "CREDIX", "10", "95"], ["Michael R", "septiembre", "2026", "PURDY", "5", "57"], ["Noelia M", "septiembre", "2026", "BNCR", "609", "5643"], ["Noelia M", "septiembre", "2026", "BCR", "818", "5770"], ["Noelia M", "septiembre", "2026", "MONIFAI", "37", "813"], ["Noelia M", "septiembre", "2026", "COOPENAE", "53", "406"], ["Noelia M", "septiembre", "2026", "BP", "30", "275"], ["Noelia M", "septiembre", "2026", "COOPEANDE", "8", "71"], ["Noelia M", "septiembre", "2026", "CREDIX", "12", "104"], ["Noelia M", "septiembre", "2026", "PURDY", "6", "62"], ["Ricardo B", "septiembre", "2026", "BCR", "757", "5640"], ["Ricardo B", "septiembre", "2026", "BNCR", "280", "2896"], ["Ricardo B", "septiembre", "2026", "COOPENAE", "58", "470"], ["Ricardo B", "septiembre", "2026", "MONIFAI", "24", "586"], ["Ricardo B", "septiembre", "2026", "BP", "30", "275"], ["Ricardo B", "septiembre", "2026", "CREDIX", "8", "75"], ["Ricardo B", "septiembre", "2026", "PURDY", "4", "45"], ["Ricardo B", "septiembre", "2026", "COOPEANDE", "2", "22"], ["Ronald A", "septiembre", "2026", "BCR", "935", "6947"], ["Ronald A", "septiembre", "2026", "BNCR", "191", "1929"], ["Ronald A", "septiembre", "2026", "COOPENAE", "68", "530"], ["Ronald A", "septiembre", "2026", "COOPEANDE", "30", "276"], ["Ronald A", "septiembre", "2026", "MONIFAI", "30", "673"], ["Ronald A", "septiembre", "2026", "BP", "30", "275"], ["Ronald A", "septiembre", "2026", "CREDIX", "10", "86"], ["Ronald A", "septiembre", "2026", "PURDY", "5", "51"]], "meta_tipo": [["Jacqueline V", "abril", "2026", "Recurrente", "717", "6444"], ["Jacqueline V", "abril", "2026", "Única", "350", "3929"], ["Jeffrey V", "abril", "2026", "Recurrente", "780", "7139"], ["Jeffrey V", "abril", "2026", "Única", "565", "6230"], ["Noelia M", "abril", "2026", "Recurrente", "760", "6822"], ["Noelia M", "abril", "2026", "Única", "415", "4625"], ["Ricardo B", "abril", "2026", "Recurrente", "436", "3611"], ["Ricardo B", "abril", "2026", "Única", "215", "2485"], ["Ronald A", "abril", "2026", "Recurrente", "462", "3883"], ["Ronald A", "abril", "2026", "Única", "425", "4732"], ["Jimmy F", "abril", "2026", "Recurrente", "360", "2165"], ["Jimmy F", "abril", "2026", "Única", "5", "115"], ["Jacqueline V", "abril", "2026", "Asistencia", "15", "149"], ["Jeffrey V", "abril", "2026", "Asistencia", "11", "105"], ["Noelia M", "abril", "2026", "Asistencia", "15", "149"], ["Ricardo B", "abril", "2026", "Asistencia", "15", "149"], ["Ronald A", "abril", "2026", "Asistencia", "15", "149"], ["Jacqueline V", "agosto", "2026", "Recurrente", "785", "7181"], ["Jacqueline V", "agosto", "2026", "Única", "505", "4097"], ["Jeffrey V", "agosto", "2026", "Recurrente", "895", "8149"], ["Jeffrey V", "agosto", "2026", "Única", "725", "6513"], ["Noelia M", "agosto", "2026", "Recurrente", "895", "8012"], ["Noelia M", "agosto", "2026", "Única", "575", "4908"], ["Ricardo B", "agosto", "2026", "Recurrente", "561", "4711"], ["Ricardo B", "agosto", "2026", "Única", "375", "2768"], ["Ronald A", "agosto", "2026", "Recurrente", "587", "4952"], ["Ronald A", "agosto", "2026", "Única", "585", "5015"], ["Jimmy F", "agosto", "2026", "Recurrente", "410", "2490"], ["Jimmy F", "agosto", "2026", "Única", "30", "690"], ["Jacqueline V", "agosto", "2026", "Asistencia", "15", "149"], ["Jeffrey V", "agosto", "2026", "Asistencia", "11", "105"], ["Noelia M", "agosto", "2026", "Asistencia", "15", "149"], ["Ricardo B", "agosto", "2026", "Asistencia", "15", "149"], ["Ronald A", "agosto", "2026", "Asistencia", "15", "149"], ["Jacqueline V", "enero", "2026", "Recurrente", "717", "6444"], ["Jacqueline V", "enero", "2026", "Única", "350", "3929"], ["Jeffrey V", "enero", "2026", "Recurrente", "780", "7139"], ["Jeffrey V", "enero", "2026", "Única", "565", "6230"], ["Noelia M", "enero", "2026", "Recurrente", "760", "6822"], ["Noelia M", "enero", "2026", "Única", "415", "4625"], ["Ricardo B", "enero", "2026", "Recurrente", "436", "3611"], ["Ricardo B", "enero", "2026", "Única", "215", "2485"], ["Ronald A", "enero", "2026", "Recurrente", "462", "3883"], ["Ronald A", "enero", "2026", "Única", "425", "4732"], ["Jimmy F", "enero", "2026", "Recurrente", "360", "2165"], ["Jimmy F", "enero", "2026", "Única", "5", "115"], ["Jacqueline V", "enero", "2026", "Asistencia", "15", "149"], ["Jeffrey V", "enero", "2026", "Asistencia", "11", "105"], ["Noelia M", "enero", "2026", "Asistencia", "15", "149"], ["Ricardo B", "enero", "2026", "Asistencia", "15", "149"], ["Ronald A", "enero", "2026", "Asistencia", "15", "149"], ["Jacqueline V", "febrero", "2026", "Recurrente", "717", "6444"], ["Jacqueline V", "febrero", "2026", "Única", "350", "3929"], ["Jeffrey V", "febrero", "2026", "Recurrente", "780", "7139"], ["Jeffrey V", "febrero", "2026", "Única", "565", "6230"], ["Noelia M", "febrero", "2026", "Recurrente", "760", "6822"], ["Noelia M", "febrero", "2026", "Única", "415", "4625"], ["Ricardo B", "febrero", "2026", "Recurrente", "436", "3611"], ["Ricardo B", "febrero", "2026", "Única", "215", "2485"], ["Ronald A", "febrero", "2026", "Recurrente", "462", "3883"], ["Ronald A", "febrero", "2026", "Única", "425", "4732"], ["Jimmy F", "febrero", "2026", "Recurrente", "360", "2165"], ["Jimmy F", "febrero", "2026", "Única", "5", "115"], ["Jacqueline V", "febrero", "2026", "Asistencia", "15", "149"], ["Jeffrey V", "febrero", "2026", "Asistencia", "11", "105"], ["Noelia M", "febrero", "2026", "Asistencia", "15", "149"], ["Ricardo B", "febrero", "2026", "Asistencia", "15", "149"], ["Ronald A", "febrero", "2026", "Asistencia", "15", "149"], ["Jacqueline V", "julio", "2026", "Recurrente", "727", "6507"], ["Jacqueline V", "julio", "2026", "Única", "356", "4067"], ["Jeffrey V", "julio", "2026", "Recurrente", "790", "7201"], ["Jeffrey V", "julio", "2026", "Única", "571", "6368"], ["Noelia M", "julio", "2026", "Recurrente", "775", "6915"], ["Noelia M", "julio", "2026", "Única", "421", "4763"], ["Ricardo B", "julio", "2026", "Recurrente", "446", "3674"], ["Ricardo B", "julio", "2026", "Única", "221", "2623"], ["Ronald A", "julio", "2026", "Recurrente", "477", "3975"], ["Ronald A", "julio", "2026", "Única", "431", "4870"], ["Jimmy F", "julio", "2026", "Recurrente", "395", "2393"], ["Jimmy F", "julio", "2026", "Única", "8", "184"], ["Jacqueline V", "julio", "2026", "Asistencia", "15", "149"], ["Jeffrey V", "julio", "2026", "Asistencia", "11", "105"], ["Noelia M", "julio", "2026", "Asistencia", "15", "149"], ["Ricardo B", "julio", "2026", "Asistencia", "15", "149"], ["Ronald A", "julio", "2026", "Asistencia", "15", "149"], ["Jacqueline V", "junio", "2026", "Recurrente", "717", "6444"], ["Jacqueline V", "junio", "2026", "Única", "350", "3929"], ["Jeffrey V", "junio", "2026", "Recurrente", "780", "7139"], ["Jeffrey V", "junio", "2026", "Única", "565", "6230"], ["Noelia M", "junio", "2026", "Recurrente", "760", "6822"], ["Noelia M", "junio", "2026", "Única", "415", "4625"], ["Ricardo B", "junio", "2026", "Recurrente", "436", "3611"], ["Ricardo B", "junio", "2026", "Única", "215", "2485"], ["Ronald A", "junio", "2026", "Recurrente", "462", "3883"], ["Ronald A", "junio", "2026", "Única", "425", "4732"], ["Jimmy F", "junio", "2026", "Recurrente", "360", "2165"], ["Jimmy F", "junio", "2026", "Única", "5", "115"], ["Jacqueline V", "junio", "2026", "Asistencia", "15", "149"], ["Jeffrey V", "junio", "2026", "Asistencia", "11", "105"], ["Noelia M", "junio", "2026", "Asistencia", "15", "149"], ["Ricardo B", "junio", "2026", "Asistencia", "15", "149"], ["Ronald A", "junio", "2026", "Asistencia", "15", "149"], ["Jacqueline V", "marzo", "2026", "Recurrente", "717", "6444"], ["Jacqueline V", "marzo", "2026", "Única", "350", "3929"], ["Jeffrey V", "marzo", "2026", "Recurrente", "780", "7139"], ["Jeffrey V", "marzo", "2026", "Única", "565", "6230"], ["Noelia M", "marzo", "2026", "Recurrente", "760", "6822"], ["Noelia M", "marzo", "2026", "Única", "415", "4625"], ["Ricardo B", "marzo", "2026", "Recurrente", "436", "3611"], ["Ricardo B", "marzo", "2026", "Única", "215", "2485"], ["Ronald A", "marzo", "2026", "Recurrente", "462", "3883"], ["Ronald A", "marzo", "2026", "Única", "425", "4732"], ["Jimmy F", "marzo", "2026", "Recurrente", "360", "2165"], ["Jimmy F", "marzo", "2026", "Única", "5", "115"], ["Jacqueline V", "marzo", "2026", "Asistencia", "15", "149"], ["Jeffrey V", "marzo", "2026", "Asistencia", "11", "105"], ["Noelia M", "marzo", "2026", "Asistencia", "15", "149"], ["Ricardo B", "marzo", "2026", "Asistencia", "15", "149"], ["Ronald A", "marzo", "2026", "Asistencia", "15", "149"], ["Jacqueline V", "mayo", "2026", "Recurrente", "717", "6444"], ["Jacqueline V", "mayo", "2026", "Única", "350", "3929"], ["Jeffrey V", "mayo", "2026", "Recurrente", "780", "7139"], ["Jeffrey V", "mayo", "2026", "Única", "565", "6230"], ["Noelia M", "mayo", "2026", "Recurrente", "760", "6822"], ["Noelia M", "mayo", "2026", "Única", "415", "4625"], ["Ricardo B", "mayo", "2026", "Recurrente", "436", "3611"], ["Ricardo B", "mayo", "2026", "Única", "215", "2485"], ["Ronald A", "mayo", "2026", "Recurrente", "462", "3883"], ["Ronald A", "mayo", "2026", "Única", "425", "4732"], ["Jimmy F", "mayo", "2026", "Recurrente", "360", "2165"], ["Jimmy F", "mayo", "2026", "Única", "5", "115"], ["Jacqueline V", "mayo", "2026", "Asistencia", "15", "149"], ["Jeffrey V", "mayo", "2026", "Asistencia", "11", "105"], ["Noelia M", "mayo", "2026", "Asistencia", "15", "149"], ["Ricardo B", "mayo", "2026", "Asistencia", "15", "149"], ["Ronald A", "mayo", "2026", "Asistencia", "15", "149"], ["Jacqueline V", "septiembre", "2026", "Única", "652", "4765"], ["Jacqueline V", "septiembre", "2026", "Recurrente", "741", "6018"], ["Jacqueline V", "septiembre", "2026", "Asistencia", "7", "60"], ["Jeffrey V", "septiembre", "2026", "Recurrente", "950", "8333"], ["Jeffrey V", "septiembre", "2026", "Única", "665", "4789"], ["Jeffrey V", "septiembre", "2026", "Asistencia", "15", "132"], ["Jimmy F", "septiembre", "2026", "Recurrente", "970", "9069"], ["Jimmy F", "septiembre", "2026", "Única", "375", "2083"], ["Jimmy F", "septiembre", "2026", "Asistencia", "90", "882"], ["Juan V", "septiembre", "2026", "Única", "784", "6773"], ["Juan V", "septiembre", "2026", "Recurrente", "725", "6739"], ["Juan V", "septiembre", "2026", "Asistencia", "55", "546"], ["Karen A", "septiembre", "2026", "Única", "515", "3788"], ["Karen A", "septiembre", "2026", "Recurrente", "758", "6981"], ["Karen A", "septiembre", "2026", "Asistencia", "45", "403"], ["Michael R", "septiembre", "2026", "Única", "510", "3683"], ["Michael R", "septiembre", "2026", "Recurrente", "822", "6526"], ["Michael R", "septiembre", "2026", "Asistencia", "15", "152"], ["Noelia M", "septiembre", "2026", "Recurrente", "1003", "8552"], ["Noelia M", "septiembre", "2026", "Única", "509", "3567"], ["Noelia M", "septiembre", "2026", "Asistencia", "61", "1025"], ["Ricardo B", "septiembre", "2026", "Única", "505", "3793"], ["Ricardo B", "septiembre", "2026", "Recurrente", "619", "5487"], ["Ricardo B", "septiembre", "2026", "Asistencia", "39", "729"], ["Ronald A", "septiembre", "2026", "Única", "685", "5224"], ["Ronald A", "septiembre", "2026", "Recurrente", "567", "4715"], ["Ronald A", "septiembre", "2026", "Asistencia", "47", "828"]], "sucsup": {"Darlin P": ["545 CENTRO DE CONTACTO", "777 BN CORREDORA DE SEGUROS", "886 SUCURSAL DIGITAL", "FUERZA DE VENTA", "Monifai"], "Jacqueline V": ["146 OCCIDENTE CARTAGO", "174 EXTENSION DE CAJA OROSI", "23 TARRAZU", "28 PARAISO", "41 OREAMUNO", "54 TEJAR", "55 PACAYAS", "63 TOBOSI", "73 SANTA MARIA DE DOTA", "75 CARTAGO", "85 SAN PABLO DE LEON CORTES", "88 FRAILES", "AG CURRIDABAT", "AG EL GUARCO", "AG MALL SAN PEDRO", "AG MULTIPLAZA CURRIDABAT", "AG OREAMUNO", "AG PARAISO", "AG PLAZA VIQUEZ", "AG SAN FRANCISCO", "AG SAN MARCOS TARRAZU", "AG TERRAMALL", "AG TRES RIOS", "Agencia de Desamparados", "Agencia de Guadalupe", "Agencia de San José", "BPT CARTAGO", "BPT SAN PEDRO", "SUCURSAL DESAMPARADOS", "SUCURSAL GUADALUPE", "Sede 238 Pacayas", "Sede 275 cartago", "Sede 330 paraíso de cartago", "Sede 331 terramall", "Sede 332 san marcos de tarrazú", "Sede 368 paseo metrópoli", "Sede 370 san rafael de oreamuno", "Sede 371 tejar del guarco", "Sede 486 ucr", "Sede 7100 Paraiso", "Sede 914 centro de negocios curridabat", "Sede 931 san pedro", "Sede 933 registro nacional", "Sede 962 san francisco de dos ríos", "Sede 967 multiplaza del este"], "Jeffrey V": ["07 GOLFITO", "10 SAN ISIDRO DEL GENERAL", "11 CIUDAD CORTES", "118 RIO CLARO", "125 LAUREL", "126 SAN VITO DE COTO BRUS", "159 SABALITO", "186 SAN ISIDRO DEL GENERAL N°1", "195 UVITA", "22 QUEPOS", "38 BUENOS AIRES", "48 CIUDAD NEILLY", "64 PALMARES PEREZ ZELEDON", "79 PARRITA", "86 PALMAR NORTE", "94 PUERTO JIMENEZ", "AG BUENOS AIRES", "AG PALMAR NORTE", "AG QUEPOS", "AG SAN VITO", "Agencia de Buenos Aires", "Agencia de Ciudad Neilly", "Agencia de Pérez Zeledón", "BPT Ciudad Neilly", "BPT PEREZ ZELEDON", "Purdy Perez Zeledon Purdy Motor", "SUCURSAL CIUDAD NEILLY", "SUCURSAL PEREZ ZELEDON", "Sede 245 san isidro del general", "Sede 265 ciudad neilly", "Sede 267 puerto jiménez", "Sede 280 quepos", "Sede 290 san vito de coto brus", "Sede 292 sabalito", "Sede 460 buenos aires", "Sede 463 palmar norte", "Sede 541 golfito", "Sede 542 paso canoas", "Sede 600 parrita", "Sede 984 uvita"], "Jimmy F": ["100 ALAJUELITA", "102 ZAPOTE", "134 TRES RIOS", "143 PLAZA AMERICA", "147 PLAZA CRISTAL", "149 MALL SAN PEDRO", "167 SAN FRANCISCO DE DOS RIOS", "184 CC DEL SUR", "188 CC TERRAMALL", "247 CONCEPCION DE LA UNION", "30 ACOSTA", "70 SAN JUAN DE LA UNION", "72 MALL MULTICENTRO DESAMPARADOS", "78 CURRIDABAT", "80-SUCURSAL SAN PEDRO", "87 LA SABANA", "95 AVENIDA DIEZ", "96 ASERRI", "97 CC PASEO METROPOLI", "AG MALL PASEO METROPOLI", "Agencia Sabana", "Agencia de Cartago", "Agencia de Sabana", "BPT PASEO COLON", "CICLO BOUTIQUE", "Curridabat Purdy Motor", "PURDY ALESTE", "Purdy Centers (TERR - ESC)", "Purdy Curridabat Purdy Motor", "Purdy Paseo Colon", "SEDE CURRIDABAT", "SUCURSAL CARTAGO", "SUCURSAL SAN JOSE", "SUCURSAL SAN PEDRO", "Sede 349 tres ríos", "Sede 491 Municipalidad San José", "Sede 552 Junta Protección Social", "Sede 808 kristal oficinas centrales", "Sede 903 multicentro desamparados", "Sede 904 san rafael abajo de desamparados", "Sede 907 desamparados", "Sede 908 aserrí", "Sede 917 gonzález lahman", "Sede 925 I.C.E.", "Sede 927 centro comercial del sur", "Sede 942 san sebastián", "Sede 947 paseo colón", "Sede 964 plaza américa"], "Juan V": ["02 ALAJUELA", "06 GRECIA", "105 ALAJUELA N°1", "119 LINDORA", "129 SARCHI NORTE", "14 PURISCAL", "153 ALAJUELA N°2", "154 CC REAL CARIARI", "156 CITY MALL", "164 CENTRO COMERCIAL MULTIPLAZA", "171 SAN RAFAEL DE ESCAZU", "180 SAN RAFAEL DE ALAJUELA", "33 POAS", "35 ESCAZU", "37 BELEN", "56 TURRUCARES", "60 SANTA ANA", "99 CIUDAD COLON", "AG ALAJUELA ESTE", "AG BELEN", "AG CITY MALL", "AG ESCAZU", "AG MULTIPLAZA ESCAZU", "AG SAN PEDRO DE POAS", "AG SANTA ANA", "Agencia de Alajuela", "Avenida Escazu", "BPT ALAJUELA", "BPT GRECIA", "Escazu Village", "Purdy Centers (ALA - GRE - TIB - CAR - NIC)", "Purdy Torre Lexus Aven Escazú", "SEDE BELEN", "SUCURSAL PLAZA REAL ALAJUELA", "Sede 1250 Escazú", "Sede 205 alajuela", "Sede 206 plaza real", "Sede 250 grecia", "Sede 270 puriscal", "Sede 307 barrio san josé de alajuela", "Sede 308 city mall", "Sede 362 san antonio de belén", "Sede 367 san rafael alajuela", "Sede 479 sarchí", "Sede 480 san pedro de poas", "Sede 919 santa ana", "Sede 920 Ciudad Colón", "Sede 921 San Rafael Escazú", "Sede 936 escazu", "Sede 958 multiplaza oeste"], "Karen A": ["04 HEREDIA", "114 HEREDIA N°1", "123 BARVA", "137 CALLE BLANCOS", "148 SAN JUAN DE TIBAS (LA CASONA)", "192 CC PASEO DE LAS FLORES", "245 MERCEDES NORTE DE HEREDIA", "31 SANTO DOMINGO", "40 SAN RAFAEL DE HEREDIA", "42 SAN ISIDRO DE HEREDIA", "44 SAN JOAQUIN DE FLORES", "45 SANTA BARBARA DE HEREDIA", "61 LA URUCA", "84 PAVAS", "AG LA URUCA", "AG LOS ANGELES", "AG MALL PASEO DE LAS FLORES", "AG PLAZA HEREDIA", "AG SAN FRANCISCO DE HEREDIA", "AG SANTA BARBARA", "AG STO DOMINGO HEREDIA", "AG TIBAS", "Agencia de Heredia", "BPT HEREDIA", "BPT PAVAS", "Purdy Ciudad Toyota 1", "SUCURSAL HEREDIA", "SUCURSAL ROHRMOSER", "SUCURSAL TIBAS", "Sede 216 oxigeno", "Sede 220 heredia", "Sede 358 C.C. Plaza Rohrmorser", "Sede 359 mall paseo de las flores", "Sede 363 santa bárbara", "Sede 364 santo domingo", "Sede 365 barva de heredia", "Sede 366 san rafael de heredia", "Sede 373 san joaquín de flores", "Sede 830 Punto País Plaza Mayor", "Sede 926 plaza mayor", "Sede 935 tibás", "Sede 943 la uruca", "Sede 949 centro de negocios barreal", "Sede 970 pavas", "Sede Tibas"], "Michael R": ["107 PLAZA HIGUERONES", "173 SABANILLA", "194 SAN ANTONIO DE CORONADO", "203 PLAZA LINCOLN", "208 OFICINAS CENTRALES", "36 MORAVIA", "47 DESAMPARADOS", "53 CORONADO", "77 GUADALUPE", "91 CC GUADALUPE", "AG ASERRI", "AG CIUDAD COLON", "AG CORONADO", "AG EL ALTO GUADALUPE", "AG EXPRESSO", "AG HATILLO", "AG MALL PLAZA LINCOLN", "AREA SUCURSAL MOVIL", "BPT CATEDRAL", "BPT GOICOECHEA", "BPT MORAVIA", "BPT MULTICENTRO DESAMPARADOS", "BPT PURISCAL", "Popular Sociedad Agencia De Seguros", "Sede 425 oficina central a", "Sede 905 paseo estudiantes", "Sede 909 guadalupe", "Sede 932 sabanilla", "Sede 945 moravia", "Sede 946 plaza lincoln", "Sede 950 coronado", "Sede 955 san antonio coronado", "Sede 956 novacentro"], "Noelia M": ["08 CAÑAS", "09 SANTA CRUZ", "103 EXTENSION DE CAJA AGUAS CLARAS", "108 LA FORTUNA DE BAGACES", "13 NICOYA", "145 TAMARINDO", "15 LIBERIA", "155 PLAYAS DEL COCO", "179 SAMARA", "191 PLAYA CARMEN", "193 FLAMINGO", "24 TILARAN", "25 ABANGARES", "26 FILADELFIA", "49 BAGACES", "62 COLONIA CARMONA", "65 LA CRUZ", "83 HOJANCHA", "AG LA CRUZ", "AG LIBERIA CENTRO", "AG TILARAN", "Agencia de Liberia", "Agencia de Nicoya", "BPT Canas", "BPT LIBERIA", "BPT NICOYA", "BPT SANTA CRUZ", "Liberia Purdy Motor", "SUCURSAL LIBERIA", "SUCURSAL NICOYA", "SUCURSAL SANTA CRUZ", "Sede 210 cañas", "Sede 225 Centro de Negocios Liberia", "Sede 229 la cruz", "Sede 235 nicoya", "Sede 236 playa sámara", "Sede 239 playa nosara", "Sede 321 tilarán", "Sede 322 guayabo", "Sede 323 bagaces", "Sede 325 flamingo", "Sede 326 santa cruz", "Sede 327 filadelfia", "Sede 398 tamarindo"], "Ricardo B": ["111 SANTA ROSA DE POCOSOL", "12 CIUDAD QUESADA", "162 CENTRO DE NEGOCIOS CIUDAD QUESADA", "163 AGUAS ZARCAS", "170 MUELLE DE SAN CARLOS", "18 NARANJO", "19 PALMARES", "20 SAN RAMON", "249 FLORENCIA", "29 ZARCERO", "50 VENECIA", "52 ARENAL", "57 LA FORTUNA", "58 PITAL", "66 SANTA RITA DE RIO CUARTO", "67 LOS CHILES", "68 UPALA", "76 GUATUSO", "AG AGUAS ZARCAS", "AG FLORENCIA", "AG LA FORTUNA", "AG NARANJO", "AG PALMARES", "AG PLAZA SAN CARLOS", "AG STA ROSA POCOSOL", "AG UPALA", "AG ZARCERO", "Agencia Mall El Encuentro", "Agencia de San Carlos", "Agencia de San Ramón", "BPT SAN CARLOS", "BPT SAN RAMON", "Purdy San Carlos Purdy Motor", "SUCURSAL SAN CARLOS", "SUCURSAL SAN RAMON", "Sede 211 upala", "Sede 215 ciudad quesada", "Sede 255 san ramón", "Sede 295 naranjo", "Sede 297 palmares", "Sede 334 florencia ciudad quesada", "Sede 341 aguas zarcas", "Sede 342 santa rosa de pocosol", "Sede 345 pital", "Sede 346 la fortuna", "Sede 347 río cuarto", "Sede 660 zarcero"], "Ronald A": ["01 LIMON", "05 TURRIALBA", "110 EXTENSION DE CAJA LA SUIZA", "112 BRIBRI", "124 RIO FRIO", "133 CARIARI", "139 PUERTO VIEJO", "165-AGENCIA LA VIRGEN DE SARAPIQUI", "17 SIQUIRRES", "39 SARAPIQUI", "51 GUAPILES", "59 GUACIMO", "93 PUERTO VIEJO DE LIMON", "98 BATAAN", "AG CARIARI", "AG GUACIMO", "AG PTO VIEJO SARAPIQUI", "AG SIQUIRRES", "Agencia de Guápiles", "Agencia de Limón", "Agencia de Turrialba", "BPT GUAPILES", "BPT LIMON", "BPT TURRIALBA", "Purdy Center Guápiles", "SUCURSAL GUAPILES", "SUCURSAL LIMON", "SUCURSAL TURRIALBA", "Sede 230 limón", "Sede 232 cahuita", "Sede 234 venecia de carrandí", "Sede 260 turrialba", "Sede 285 guápiles", "Sede 286 río frío de sarapiquí", "Sede 399 puerto viejo de talamanca", "Sede 401 bataán de matina", "Sede 619 cj aux subasta ganadera guapiles", "Sede 620 cariari", "Sede 622 siquirres", "Sede 623 puerto viejo sarapiquí", "Sede 629 guácimo"]}, "fc_sponsor": [["enero", "BCR", "6200", "57632"], ["enero", "BNCR", "2200", "22835"], ["enero", "BP", "400", "2400"], ["enero", "COOPENAE", "485", "3795"], ["enero", "COOPEANDE", "100", "916"], ["enero", "CREDIX", "225", "1791"], ["enero", "PURDY", "25", "275"], ["enero", "MONIFAI", "0", "0"], ["enero", "CORREOS", "3250", "34125"], ["enero", "ISHOP", "375", "57859"], ["febrero", "BCR", "6350", "59719"], ["febrero", "BNCR", "2550", "25935"], ["febrero", "BP", "500", "3000"], ["febrero", "COOPENAE", "485", "3795"], ["febrero", "COOPEANDE", "100", "916"], ["febrero", "CREDIX", "225", "1791"], ["febrero", "PURDY", "50", "550"], ["febrero", "MONIFAI", "300", "7200"], ["febrero", "CORREOS", "3500", "36750"], ["febrero", "ISHOP", "368", "56115"], ["marzo", "BCR", "6350", "59719"], ["marzo", "BNCR", "2550", "25935"], ["marzo", "BP", "500", "3000"], ["marzo", "COOPENAE", "485", "3795"], ["marzo", "COOPEANDE", "100", "916"], ["marzo", "CREDIX", "225", "1791"], ["marzo", "PURDY", "50", "550"], ["marzo", "MONIFAI", "300", "7200"], ["marzo", "CORREOS", "3500", "36750"], ["marzo", "ISHOP", "368", "56115"], ["abril", "BCR", "4805", "45526"], ["abril", "BNCR", "2315", "23514"], ["abril", "BP", "350", "2100"], ["abril", "COOPENAE", "375", "2930"], ["abril", "COOPEANDE", "100", "916"], ["abril", "CREDIX", "225", "1791"], ["abril", "PURDY", "35", "385"], ["abril", "MONIFAI", "300", "7200"], ["abril", "CORREOS", "2450", "25725"], ["abril", "ISHOP", "251", "37628"], ["mayo", "BCR", "5425", "51746"], ["mayo", "BNCR", "2750", "27959"], ["mayo", "BP", "500", "3000"], ["mayo", "COOPENAE", "555", "4355"], ["mayo", "COOPEANDE", "100", "916"], ["mayo", "CREDIX", "225", "1791"], ["mayo", "PURDY", "50", "550"], ["mayo", "MONIFAI", "300", "7200"], ["mayo", "CORREOS", "0", "0"], ["mayo", "ISHOP", "0", "0"], ["junio", "BCR", "5425", "51746"], ["junio", "BNCR", "2750", "27959"], ["junio", "BP", "500", "3000"], ["junio", "COOPENAE", "555", "4355"], ["junio", "COOPEANDE", "100", "916"], ["junio", "CREDIX", "225", "1791"], ["junio", "PURDY", "50", "550"], ["junio", "MONIFAI", "300", "7200"], ["junio", "CORREOS", "0", "0"], ["junio", "ISHOP", "0", "0"], ["julio", "BCR", "5425", "51746"], ["julio", "BNCR", "2825", "28709"], ["julio", "BP", "620", "4110"], ["julio", "COOPENAE", "555", "4355"], ["julio", "COOPEANDE", "100", "916"], ["julio", "CREDIX", "225", "1791"], ["julio", "PURDY", "50", "550"], ["julio", "MONIFAI", "300", "7200"], ["julio", "CORREOS", "0", "0"], ["julio", "ISHOP", "0", "0"], ["agosto", "BCR", "5425", "51746"], ["agosto", "BNCR", "2750", "27959"], ["agosto", "BP", "500", "3000"], ["agosto", "COOPENAE", "555", "4355"], ["agosto", "COOPEANDE", "100", "916"], ["agosto", "CREDIX", "225", "1791"], ["agosto", "PURDY", "50", "550"], ["agosto", "MONIFAI", "300", "7200"], ["agosto", "CORREOS", "0", "0"], ["agosto", "ISHOP", "0", "0"], ["septiembre", "BCR", "5445", "50764"], ["septiembre", "BNCR", "2950", "30359"], ["septiembre", "BP", "625", "4100"], ["septiembre", "COOPENAE", "555", "4356"], ["septiembre", "COOPEANDE", "100", "916"], ["septiembre", "CREDIX", "225", "1791"], ["septiembre", "PURDY", "50", "550"], ["septiembre", "MONIFAI", "300", "7200"], ["septiembre", "CORREOS", "0", "0"], ["septiembre", "ISHOP", "0", "0"], ["octubre", "BCR", "5425", "51746"], ["octubre", "BNCR", "2750", "27959"], ["octubre", "BP", "500", "3000"], ["octubre", "COOPENAE", "555", "4355"], ["octubre", "COOPEANDE", "100", "916"], ["octubre", "CREDIX", "225", "1791"], ["octubre", "PURDY", "50", "550"], ["octubre", "MONIFAI", "300", "7200"], ["octubre", "CORREOS", "0", "0"], ["octubre", "ISHOP", "0", "0"], ["noviembre", "BCR", "5425", "51746"], ["noviembre", "BNCR", "2750", "27959"], ["noviembre", "BP", "500", "3000"], ["noviembre", "COOPENAE", "555", "4355"], ["noviembre", "COOPEANDE", "100", "916"], ["noviembre", "CREDIX", "225", "1791"], ["noviembre", "PURDY", "50", "550"], ["noviembre", "MONIFAI", "300", "7200"], ["noviembre", "CORREOS", "0", "0"], ["noviembre", "ISHOP", "0", "0"], ["diciembre", "BCR", "5425", "51746"], ["diciembre", "BNCR", "2750", "27959"], ["diciembre", "BP", "500", "3000"], ["diciembre", "COOPENAE", "555", "4355"], ["diciembre", "COOPEANDE", "100", "916"], ["diciembre", "CREDIX", "225", "1791"], ["diciembre", "PURDY", "50", "550"], ["diciembre", "MONIFAI", "300", "7200"], ["diciembre", "CORREOS", "0", "0"], ["diciembre", "ISHOP", "0", "0"]], "fc_tipo": [["enero", "Recurrente", "6260", "53677"], ["enero", "Única", "6875", "126759"], ["enero", "Asistencia", "125", "1191"], ["febrero", "Recurrente", "6610", "56789"], ["febrero", "Única", "7368", "130315"], ["febrero", "Asistencia", "450", "8666"], ["marzo", "Recurrente", "6610", "56789"], ["marzo", "Única", "7368", "130315"], ["marzo", "Asistencia", "450", "8666"], ["abril", "Recurrente", "5270", "45900"], ["abril", "Única", "5501", "93313"], ["abril", "Asistencia", "435", "8501"], ["mayo", "Recurrente", "6205", "54076"], ["mayo", "Única", "3250", "34775"], ["mayo", "Asistencia", "450", "8666"], ["junio", "Recurrente", "6205", "54076"], ["junio", "Única", "3250", "34775"], ["junio", "Asistencia", "450", "8666"], ["julio", "Recurrente", "6380", "55476"], ["julio", "Única", "3270", "35235"], ["julio", "Asistencia", "450", "8666"], ["agosto", "Recurrente", "6205", "54076"], ["agosto", "Única", "3250", "34775"], ["agosto", "Asistencia", "450", "8666"], ["septiembre", "Recurrente", "6320", "55380"], ["septiembre", "Única", "3445", "35720"], ["septiembre", "Asistencia", "485", "8936"], ["octubre", "Recurrente", "6205", "54076"], ["octubre", "Única", "3250", "34775"], ["octubre", "Asistencia", "450", "8666"], ["noviembre", "Recurrente", "6205", "54076"], ["noviembre", "Única", "3250", "34775"], ["noviembre", "Asistencia", "450", "8666"], ["diciembre", "Recurrente", "6205", "54076"], ["diciembre", "Única", "3250", "34775"], ["diciembre", "Asistencia", "450", "8666"]], "fc_canal": [["enero", "13260", "181627"], ["febrero", "14428", "195771"], ["marzo", "14428", "195771"], ["abril", "11206", "147714"], ["mayo", "9905", "97517"], ["junio", "9905", "97517"], ["julio", "10100", "99377"], ["agosto", "9905", "97517"], ["septiembre", "10350", "100952"], ["octubre", "10350", "100952"], ["noviembre", "10350", "100952"], ["diciembre", "10350", "100952"]], "fc_camp": [["BCR", "AP Desempleo BCR", "Enero", "300", "1500"], ["BCR", "Carretera BCR", "Enero", "1200", "7056"], ["BCR", "FRE BCR", "Enero", "1100", "10901"], ["BCR", "Mis Pertenencias Protegidas BCR", "Enero", "250", "1868"], ["BCR", "Muvit BCR", "Enero", "0", "0"], ["BCR", "Pasaporte dolares BCR", "Enero", "3250", "34775"], ["BCR", "Travesias travel BCR", "Enero", "0", "0"], ["BCR", "Retiro Seguro BCR", "Enero", "0", "0"], ["BNCR", "AP Rentas BNCR", "Enero", "50", "285"], ["BNCR", "FRE BNCR", "Enero", "1750", "17710"], ["BNCR", "FRE MEN BNCR", "Enero", "0", "0"], ["BNCR", "RDH BNCR", "Enero", "400", "4840"], ["BNCR", "SENIOR BCR", "Enero", "0", "0"], ["BP", "Bolso BP", "Enero", "400", "2400"], ["BP", "Familia Protegida BP", "Enero", "0", "0"], ["BP", "Saldo Protegido BP", "Enero", "0", "0"], ["BP", "Muvit BP", "Enero", "0", "0"], ["COOPENAE", "Asistencia NAE", "Enero", "25", "193"], ["COOPENAE", "AP Rentas NAE", "Enero", "120", "900"], ["COOPENAE", "FRE NAE", "Enero", "140", "1282"], ["COOPENAE", "RDH NAE", "Enero", "200", "1420"], ["COOPEANDE", "FRE ANDE", "Enero", "100", "916"], ["COOPEANDE", "Asistencias", "Enero", "0", "0"], ["CREDIX", "Multiasistencia Credix", "Enero", "40", "316"], ["CREDIX", "Marchamito Credix", "Enero", "60", "600"], ["CREDIX", "Saldo Fácil Credix", "Enero", "125", "875"], ["PURDY", "Asistencias Purdy", "Enero", "25", "275"], ["MONIFAI", "Monifai Asistencias", "Enero", "0", "0"], ["CORREOS", "PASAPORTE NO RENOVABLE CORREOS CR", "Enero", "3250", "34125"], ["ISHOP", "Ipad / Mac", "Enero", "180", "29574"], ["ISHOP", "Iphone", "Enero", "70", "19810"], ["ISHOP", "Watch", "Enero", "125", "8475"], ["BCR", "AP Desempleo BCR", "Febrero", "400", "3032"], ["BCR", "Carretera BCR", "Febrero", "1100", "6468"], ["BCR", "FRE BCR", "Febrero", "1100", "10901"], ["BCR", "Mis Pertenencias Protegidas BCR", "Febrero", "250", "1868"], ["BCR", "Muvit BCR", "Febrero", "0", "0"], ["BCR", "Pasaporte dolares BCR", "Febrero", "3500", "37450"], ["BCR", "Travesias travel BCR", "Febrero", "0", "0"], ["BCR", "Retiro Seguro BCR", "Febrero", "0", "0"], ["BNCR", "AP Rentas BNCR", "Febrero", "150", "855"], ["BNCR", "FRE BNCR", "Febrero", "2000", "20240"], ["BNCR", "FRE MEN BNCR", "Febrero", "0", "0"], ["BNCR", "RDH BNCR", "Febrero", "400", "4840"], ["BNCR", "SENIOR BNCR", "Febrero", "0", "0"], ["BP", "Bolso BP", "Febrero", "500", "3000"], ["BP", "Familia Protegida BP", "Febrero", "0", "0"], ["BP", "Saldo Protegido BP", "Febrero", "0", "0"], ["BP", "Muvit BP", "Febrero", "0", "0"], ["COOPENAE", "Asistencia NAE", "Febrero", "25", "193"], ["COOPENAE", "AP Rentas NAE", "Febrero", "120", "900"], ["COOPENAE", "FRE NAE", "Febrero", "140", "1282"], ["COOPENAE", "RDH NAE", "Febrero", "200", "1420"], ["COOPEANDE", "FRE ANDE", "Febrero", "100", "916"], ["COOPEANDE", "Asistencias", "Febrero", "0", "0"], ["CREDIX", "Multiasistencia Credix", "Febrero", "40", "316"], ["CREDIX", "Marchamito Credix", "Febrero", "60", "600"], ["CREDIX", "Saldo Fácil Credix", "Febrero", "125", "875"], ["PURDY", "Asistencias Purdy", "Febrero", "50", "550"], ["MONIFAI", "Monifai Asistencias", "Febrero", "300", "7200"], ["CORREOS", "PASAPORTE NO RENOVABLE CORREOS CR", "Febrero", "3500", "36750"], ["ISHOP", "Ipad / Mac", "Febrero", "178", "29245"], ["ISHOP", "Iphone", "Febrero", "65", "18395"], ["ISHOP", "Watch", "Febrero", "125", "8475"], ["BCR", "AP Desempleo BCR", "Marzo", "400", "3032"], ["BCR", "Carretera BCR", "Marzo", "1100", "6468"], ["BCR", "FRE BCR", "Marzo", "1100", "10901"], ["BCR", "Mis Pertenencias Protegidas BCR", "Marzo", "250", "1868"], ["BCR", "Muvit BCR", "Marzo", "0", "0"], ["BCR", "Pasaporte dolares BCR", "Marzo", "3500", "37450"], ["BCR", "Travesias Travel BCR", "Marzo", "0", "0"], ["BCR", "Retiro Seguro BCR", "Marzo", "0", "0"], ["BNCR", "AP Rentas BNCR", "Marzo", "150", "855"], ["BNCR", "FRE BNCR", "Marzo", "2000", "20240"], ["BNCR", "FRE MEN BNCR", "Marzo", "0", "0"], ["BNCR", "RDH BNCR", "Marzo", "400", "4840"], ["BNCR", "SENIOR BNCR", "Marzo", "0", "0"], ["BP", "Bolso BP", "Marzo", "500", "3000"], ["BP", "Familia Protegida BP", "Marzo", "0", "0"], ["BP", "Saldo Protegido BP", "Marzo", "0", "0"], ["BP", "Muvit BP", "Marzo", "0", "0"], ["COOPENAE", "Asistencia NAE", "Marzo", "25", "193"], ["COOPENAE", "AP Rentas NAE", "Marzo", "120", "900"], ["COOPENAE", "FRE NAE", "Marzo", "140", "1282"], ["COOPENAE", "RDH NAE", "Marzo", "200", "1420"], ["COOPEANDE", "FRE ANDE", "Marzo", "100", "916"], ["COOPEANDE", "Asistencias", "Marzo", "0", "0"], ["CREDIX", "Multiasistencia Credix", "Marzo", "40", "316"], ["CREDIX", "Marchamito Credix", "Marzo", "60", "600"], ["CREDIX", "Saldo Fácil Credix", "Marzo", "125", "875"], ["PURDY", "Asistencias Purdy", "Marzo", "50", "550"], ["MONIFAI", "Monifai Asistencias", "Marzo", "300", "7200"], ["CORREOS", "PASAPORTE NO RENOVABLE CORREOS CR", "Marzo", "3500", "36750"], ["ISHOP", "Ipad / Mac", "Marzo", "178", "29245"], ["ISHOP", "Iphone", "Marzo", "65", "18395"], ["ISHOP", "Watch", "Marzo", "125", "8475"], ["BCR", "AP Desempleo BCR", "Abril", "280", "2122"], ["BCR", "Carretera BCR", "Abril", "800", "4704"], ["BCR", "FRE BCR", "Abril", "750", "7433"], ["BCR", "Mis Pertenencias Protegidas BCR", "Abril", "175", "1307"], ["BCR", "Muvit BCR", "Abril", "0", "0"], ["BCR", "Pasaporte dolares BCR", "Abril", "2800", "29960"], ["BCR", "Travesias travel BCR", "Abril", "0", "0"], ["BCR", "Retiro Seguro BCR", "Abril", "0", "0"], ["BNCR", "AP Rentas BNCR", "Abril", "115", "656"], ["BNCR", "FRE BNCR", "Abril", "1900", "19228"], ["BNCR", "FRE MEN BNCR", "Abril", "0", "0"], ["BNCR", "RDH BNCR", "Abril", "300", "3630"], ["BNCR", "SENIOR BNCR", "Abril", "0", "0"], ["BP", "Bolso BP", "Abril", "350", "2100"], ["BP", "Familia Protegida BP", "Abril", "0", "0"], ["BP", "Saldo Protegido BP", "Abril", "0", "0"], ["BP", "Muvit BP", "Abril", "0", "0"], ["COOPENAE", "Asistencia NAE", "Abril", "15", "116"], ["COOPENAE", "AP Rentas NAE", "Abril", "105", "788"], ["COOPENAE", "FRE NAE", "Abril", "105", "962"], ["COOPENAE", "RDH NAE", "Abril", "150", "1065"], ["COOPEANDE", "FRE ANDE", "Abril", "100", "916"], ["COOPEANDE", "Asistencias", "Abril", "0", "0"], ["CREDIX", "Multiasistencia Credix", "Abril", "40", "316"], ["CREDIX", "Marchamito Credix", "Abril", "60", "600"], ["CREDIX", "Saldo Fácil Credix", "Abril", "125", "875"], ["PURDY", "Asistencias Purdy", "Abril", "35", "385"], ["MONIFAI", "Monifai Asistencias", "Abril", "300", "7200"], ["CORREOS", "PASAPORTE NO RENOVABLE CORREOS CR", "Abril", "2450", "25725"], ["ISHOP", "Ipad / Mac", "Abril", "82", "13473"], ["ISHOP", "Iphone", "Abril", "59", "16697"], ["ISHOP", "Watch", "Abril", "110", "7458"], ["BCR", "AP Desempleo BCR", "Mayo", "400", "3032"], ["BCR", "Carretera BCR", "Mayo", "800", "4704"], ["BCR", "FRE BCR", "Mayo", "800", "7928"], ["BCR", "Mis Pertenencias Protegidas BCR", "Mayo", "175", "1307"], ["BCR", "Muvit BCR", "Mayo", "0", "0"], ["BCR", "Pasaporte dolares BCR", "Mayo", "3250", "34775"], ["BCR", "Travesias travel BCR", "Mayo", "0", "0"], ["BCR", "Retiro Seguro BCR", "Mayo", "0", "0"], ["BNCR", "AP Rentas BNCR", "Mayo", "150", "855"], ["BNCR", "FRE BNCR", "Mayo", "2200", "22264"], ["BNCR", "FRE MEN BNCR", "Mayo", "0", "0"], ["BNCR", "RDH BNCR", "Mayo", "400", "4840"], ["BNCR", "SENIOR BNCR", "Mayo", "0", "0"], ["BP", "Bolso BP", "Mayo", "500", "3000"], ["BP", "Familia Protegida BP", "Mayo", "0", "0"], ["BP", "Saldo Protegido BP", "Mayo", "0", "0"], ["BP", "Muvit BP", "Mayo", "0", "0"], ["COOPENAE", "Asistencia NAE", "Mayo", "35", "270"], ["COOPENAE", "AP Rentas NAE", "Mayo", "160", "1200"], ["COOPENAE", "FRE NAE", "Mayo", "160", "1466"], ["COOPENAE", "RDH NAE", "Mayo", "200", "1420"], ["COOPEANDE", "FRE ANDE", "Mayo", "100", "916"], ["COOPEANDE", "Asistencias", "Mayo", "0", "0"], ["CREDIX", "Multiasistencia Credix", "Mayo", "40", "316"], ["CREDIX", "Marchamito Credix", "Mayo", "60", "600"], ["CREDIX", "Saldo Fácil Credix", "Mayo", "125", "875"], ["PURDY", "Asistencias Purdy", "Mayo", "50", "550"], ["MONIFAI", "Monifai Asistencias", "Mayo", "300", "7200"], ["CORREOS", "PASAPORTE NO RENOVABLE CORREOS CR", "Mayo", "0", "0"], ["ISHOP", "Ipad / Mac", "Mayo", "0", "0"], ["ISHOP", "Iphone", "Mayo", "0", "0"], ["ISHOP", "Watch", "Mayo", "0", "0"], ["BCR", "AP Desempleo BCR", "Junio", "400", "3032"], ["BCR", "Carretera BCR", "Junio", "800", "4704"], ["BCR", "FRE BCR", "Junio", "800", "7928"], ["BCR", "Mis Pertenencias Protegidas BCR", "Junio", "175", "1307"], ["BCR", "Muvit BCR", "Junio", "0", "0"], ["BCR", "Pasaporte dolares BCR", "Junio", "3250", "34775"], ["BCR", "Travesias travel BCR", "Junio", "0", "0"], ["BCR", "Retiro Seguro BCR", "Junio", "0", "0"], ["BNCR", "AP Rentas BNCR", "Junio", "150", "855"], ["BNCR", "FRE BNCR", "Junio", "2200", "22264"], ["BNCR", "FRE MEN BNCR", "Junio", "0", "0"], ["BNCR", "RDH BNCR", "Junio", "400", "4840"], ["BNCR", "SENIOR BNCR", "Junio", "0", "0"], ["BP", "Bolso BP", "Junio", "500", "3000"], ["BP", "Familia Protegida BP", "Junio", "0", "0"], ["BP", "Saldo Protegido BP", "Junio", "0", "0"], ["BP", "Muvit BP", "Junio", "0", "0"], ["COOPENAE", "Asistencia NAE", "Junio", "35", "270"], ["COOPENAE", "AP Rentas NAE", "Junio", "160", "1200"], ["COOPENAE", "FRE NAE", "Junio", "160", "1466"], ["COOPENAE", "RDH NAE", "Junio", "200", "1420"], ["COOPEANDE", "FRE ANDE", "Junio", "100", "916"], ["COOPEANDE", "Asistencias", "Junio", "0", "0"], ["CREDIX", "Multiasistencia Credix", "Junio", "40", "316"], ["CREDIX", "Marchamito Credix", "Junio", "60", "600"], ["CREDIX", "Saldo Fácil Credix", "Junio", "125", "875"], ["PURDY", "Asistencias Purdy", "Junio", "50", "550"], ["MONIFAI", "Monifai Asistencias", "Junio", "300", "7200"], ["CORREOS", "PASAPORTE NO RENOVABLE CORREOS CR", "Junio", "0", "0"], ["ISHOP", "Ipad / Mac", "Junio", "0", "0"], ["ISHOP", "Iphone", "Junio", "0", "0"], ["ISHOP", "Watch", "Junio", "0", "0"], ["BCR", "AP Desempleo BCR", "Julio", "400", "3032"], ["BCR", "Carretera BCR", "Julio", "800", "4704"], ["BCR", "FRE BCR", "Julio", "800", "7928"], ["BCR", "Mis Pertenencias Protegidas BCR", "Julio", "175", "1307"], ["BCR", "Muvit BCR", "Julio", "0", "0"], ["BCR", "Pasaporte dolares BCR", "Julio", "3250", "34775"], ["BCR", "Travesias travel BCR", "Julio", "0", "0"], ["BCR", "Retiro Seguro BCR", "Julio", "0", "0"], ["BNCR", "AP Rentas BNCR", "Julio", "150", "855"], ["BNCR", "FRE BNCR", "Julio", "2200", "22264"], ["BNCR", "FRE MEN BNCR", "Julio", "0", "0"], ["BNCR", "RDH BNCR", "Julio", "400", "4840"], ["BNCR", "SENIOR BNCR", "Julio", "75", "750"], ["BP", "Bolso BP", "Julio", "500", "3000"], ["BP", "Familia Protegida BP", "Julio", "50", "325"], ["BP", "Saldo Protegido BP", "Julio", "50", "325"], ["BP", "Muvit BP", "Julio", "20", "460"], ["COOPENAE", "Asistencia NAE", "Julio", "35", "270"], ["COOPENAE", "AP Rentas NAE", "Julio", "160", "1200"], ["COOPENAE", "FRE NAE", "Julio", "160", "1466"], ["COOPENAE", "RDH NAE", "Julio", "200", "1420"], ["COOPEANDE", "FRE ANDE", "Julio", "100", "916"], ["COOPEANDE", "Asistencias", "Julio", "0", "0"], ["CREDIX", "Multiasistencia Credix", "Julio", "40", "316"], ["CREDIX", "Marchamito Credix", "Julio", "60", "600"], ["CREDIX", "Saldo Fácil Credix", "Julio", "125", "875"], ["PURDY", "Asistencias Purdy", "Julio", "50", "550"], ["MONIFAI", "Monifai Asistencias", "Julio", "300", "7200"], ["CORREOS", "PASAPORTE NO RENOVABLE CORREOS CR", "Julio", "0", "0"], ["ISHOP", "Ipad / Mac", "Julio", "0", "0"], ["ISHOP", "Iphone", "Julio", "0", "0"], ["ISHOP", "Watch", "Julio", "0", "0"], ["BCR", "AP Desempleo BCR", "Agosto", "300", "1650"], ["BCR", "Carretera BCR", "Agosto", "800", "4704"], ["BCR", "FRE BCR", "Agosto", "800", "7928"], ["BCR", "Mis Pertenencias Protegidas BCR", "Agosto", "150", "975"], ["BCR", "Muvit BCR", "Agosto", "20", "378"], ["BCR", "Pasaporte dolares BCR", "Agosto", "3250", "34775"], ["BCR", "Travesias travel BCR", "Agosto", "0", "0"], ["BCR", "Retiro Seguro BCR", "Agosto", "150", "45"], ["BNCR", "AP Rentas BNCR", "Agosto", "150", "855"], ["BNCR", "FRE BNCR", "Agosto", "2200", "22264"], ["BNCR", "FRE MEN BNCR", "Agosto", "0", "0"], ["BNCR", "RDH BNCR", "Agosto", "400", "4840"], ["BNCR", "SENIOR BNCR", "Agosto", "0", "0"], ["BP", "Bolso BP", "Agosto", "500", "3000"], ["BP", "Familia Protegida BP", "Agosto", "15", "90"], ["BP", "Saldo Protegido BP", "Agosto", "15", "90"], ["BP", "Muvit BP", "Agosto", "15", "90"], ["COOPENAE", "Asistencia NAE", "Agosto", "35", "270"], ["COOPENAE", "AP Rentas NAE", "Agosto", "160", "1200"], ["COOPENAE", "FRE NAE", "Agosto", "160", "1466"], ["COOPENAE", "RDH NAE", "Agosto", "200", "1420"], ["COOPEANDE", "FRE ANDE", "Agosto", "100", "916"], ["COOPEANDE", "Asistencias", "Agosto", "0", "0"], ["CREDIX", "Multiasistencia Credix", "Agosto", "40", "316"], ["CREDIX", "Marchamito Credix", "Agosto", "60", "600"], ["CREDIX", "Saldo Fácil Credix", "Agosto", "125", "875"], ["PURDY", "Asistencias Purdy", "Agosto", "50", "550"], ["MONIFAI", "Monifai Asistencias", "Agosto", "300", "7200"], ["CORREOS", "PASAPORTE NO RENOVABLE CORREOS CR", "Agosto", "0", "0"], ["ISHOP", "Ipad / Mac", "Agosto", "0", "0"], ["ISHOP", "Iphone", "Agosto", "0", "0"], ["ISHOP", "Watch", "Agosto", "0", "0"], ["BCR", "AP Desempleo BCR", "Septiembre", "300", "2100"], ["BCR", "Carretera BCR", "Septiembre", "800", "4704"], ["BCR", "FRE BCR", "Septiembre", "800", "7928"], ["BCR", "Mis Pertenencias Protegidas BCR", "Septiembre", "125", "812"], ["BCR", "Muvit BCR", "Septiembre", "20", "400"], ["BCR", "Pasaporte dolares BCR", "Septiembre", "3250", "34775"], ["BCR", "Travesias travel BCR", "Septiembre", "0", "0"], ["BCR", "Retiro Seguro BCR", "Septiembre", "150", "45"], ["BNCR", "AP Rentas BNCR", "Septiembre", "150", "855"], ["BNCR", "FRE BNCR", "Septiembre", "2200", "22264"], ["BNCR", "FRE MEN BNCR", "Septiembre", "0", "0"], ["BNCR", "RDH BNCR", "Septiembre", "400", "4840"], ["BNCR", "SENIOR BNCR", "Septiembre", "200", "2400"], ["BP", "Bolso BP", "Septiembre", "500", "3000"], ["BP", "Familia Protegida BP", "Septiembre", "50", "300"], ["BP", "Saldo Protegido BP", "Septiembre", "50", "300"], ["BP", "Muvit BP", "Septiembre", "25", "500"], ["COOPENAE", "Asistencia NAE", "Septiembre", "35", "270"], ["COOPENAE", "AP Rentas NAE", "Septiembre", "160", "1200"], ["COOPENAE", "FRE NAE", "Septiembre", "160", "1466"], ["COOPENAE", "RDH NAE", "Septiembre", "200", "1420"], ["COOPEANDE", "FRE ANDE", "Septiembre", "100", "916"], ["COOPEANDE", "Asistencias", "Septiembre", "0", "0"], ["CREDIX", "Multiasistencia Credix", "Septiembre", "40", "316"], ["CREDIX", "Marchamito Credix", "Septiembre", "60", "600"], ["CREDIX", "Saldo Fácil Credix", "Septiembre", "125", "875"], ["PURDY", "Asistencias Purdy", "Septiembre", "50", "550"], ["MONIFAI", "Monifai Asistencias", "Septiembre", "300", "7200"], ["CORREOS", "PASAPORTE NO RENOVABLE CORREOS CR", "Septiembre", "0", "0"], ["ISHOP", "Ipad / Mac", "Septiembre", "0", "0"], ["ISHOP", "Iphone", "Septiembre", "0", "0"], ["ISHOP", "Watch", "Septiembre", "0", "0"], ["BCR", "AP Desempleo BCR", "Octubre", "300", "2100"], ["BCR", "Carretera BCR", "Octubre", "800", "4704"], ["BCR", "FRE BCR", "Octubre", "800", "7928"], ["BCR", "Mis Pertenencias Protegidas BCR", "Octubre", "150", "1125"], ["BCR", "Muvit BCR", "Octubre", "20", "400"], ["BCR", "Pasaporte dolares BCR", "Octubre", "3250", "34775"], ["BCR", "Travesias travel BCR", "Octubre", "0", "0"], ["BCR", "Retiro Seguro BCR", "Octubre", "0", "0"], ["BNCR", "AP Rentas BNCR", "Octubre", "150", "855"], ["BNCR", "FRE BNCR", "Octubre", "2200", "22264"], ["BNCR", "FRE MEN BNCR", "Octubre", "0", "0"], ["BNCR", "RDH BNCR", "Octubre", "400", "4840"], ["BNCR", "SENIOR", "Octubre", "400", "4200"], ["BP", "Bolso BP", "Octubre", "500", "3000"], ["BP", "Familia Protegida BP", "Octubre", "50", "300"], ["BP", "Saldo Protegido BP", "Octubre", "50", "300"], ["BP", "Muvit BP", "Octubre", "25", "500"], ["COOPENAE", "Asistencia NAE", "Octubre", "35", "270"], ["COOPENAE", "AP Rentas NAE", "Octubre", "160", "1200"], ["COOPENAE", "FRE NAE", "Octubre", "160", "1466"], ["COOPENAE", "RDH NAE", "Octubre", "200", "1420"], ["COOPEANDE", "FRE ANDE", "Octubre", "100", "916"], ["COOPEANDE", "Asistencias", "Octubre", "0", "0"], ["CREDIX", "Multiasistencia Credix", "Octubre", "40", "316"], ["CREDIX", "Marchamito Credix", "Octubre", "60", "600"], ["CREDIX", "Saldo Fácil Credix", "Octubre", "125", "875"], ["PURDY", "Asistencias Purdy", "Octubre", "50", "550"], ["MONIFAI", "Monifai Asistencias", "Octubre", "300", "7200"], ["CORREOS", "PASAPORTE NO RENOVABLE CORREOS CR", "Octubre", "0", "0"], ["ISHOP", "Ipad / Mac", "Octubre", "0", "0"], ["ISHOP", "Iphone", "Octubre", "0", "0"], ["ISHOP", "Watch", "Octubre", "0", "0"], ["BCR", "AP Desempleo BCR", "Noviembre", "300", "2100"], ["BCR", "Carretera BCR", "Noviembre", "800", "4704"], ["BCR", "FRE BCR", "Noviembre", "800", "7928"], ["BCR", "Mis Pertenencias Protegidas BCR", "Noviembre", "150", "1125"], ["BCR", "Muvit BCR", "Noviembre", "20", "400"], ["BCR", "Pasaporte dolares BCR", "Noviembre", "3250", "34775"], ["BCR", "Travesias travel BCR", "Noviembre", "0", "0"], ["BCR", "Retiro Seguro BCR", "Noviembre", "0", "0"], ["BNCR", "AP Rentas BNCR", "Noviembre", "150", "855"], ["BNCR", "FRE BNCR", "Noviembre", "2200", "22264"], ["BNCR", "FRE MEN BNCR", "Noviembre", "0", "0"], ["BNCR", "RDH BNCR", "Noviembre", "400", "4840"], ["BNCR", "SENIOR", "Noviembre", "400", "4200"], ["BP", "Bolso BP", "Noviembre", "500", "3000"], ["BP", "Familia Protegida BP", "Noviembre", "50", "300"], ["BP", "Saldo Protegido BP", "Noviembre", "50", "300"], ["BP", "Muvit BP", "Noviembre", "25", "500"], ["COOPENAE", "Asistencia NAE", "Noviembre", "35", "270"], ["COOPENAE", "AP Rentas NAE", "Noviembre", "160", "1200"], ["COOPENAE", "FRE NAE", "Noviembre", "160", "1466"], ["COOPENAE", "RDH NAE", "Noviembre", "200", "1420"], ["COOPEANDE", "FRE ANDE", "Noviembre", "100", "916"], ["COOPEANDE", "Asistencias", "Noviembre", "0", "0"], ["CREDIX", "Multiasistencia Credix", "Noviembre", "40", "316"], ["CREDIX", "Marchamito Credix", "Noviembre", "60", "600"], ["CREDIX", "Saldo Fácil Credix", "Noviembre", "125", "875"], ["PURDY", "Asistencias Purdy", "Noviembre", "50", "550"], ["MONIFAI", "Monifai Asistencias", "Noviembre", "300", "7200"], ["CORREOS", "PASAPORTE NO RENOVABLE CORREOS CR", "Noviembre", "0", "0"], ["ISHOP", "Ipad / Mac", "Noviembre", "0", "0"], ["ISHOP", "Iphone", "Noviembre", "0", "0"], ["ISHOP", "Watch", "Noviembre", "0", "0"], ["BCR", "AP Desempleo BCR", "Diciembre", "110", "660"], ["BCR", "Carretera BCR", "Diciembre", "500", "3000"], ["BCR", "FRE BCR", "Diciembre", "400", "3600"], ["BCR", "Mis Pertenencias Protegidas BCR", "Diciembre", "80", "520"], ["BCR", "Muvit BCR", "Diciembre", "20", "400"], ["BCR", "Pasaporte dolares BCR", "Diciembre", "1850", "19425"], ["BCR", "Travesias travel BCR", "Diciembre", "0", "0"], ["BCR", "Retiro Seguro BCR", "Diciembre", "150", "45"], ["BNCR", "AP Rentas BNCR", "Diciembre", "150", "855"], ["BNCR", "FRE BNCR", "Diciembre", "1550", "13950"], ["BNCR", "FRE MEN BNCR", "Diciembre", "0", "0"], ["BNCR", "RDH BNCR", "Diciembre", "200", "2500"], ["BNCR", "SENIOR", "Diciembre", "200", "4000"], ["BP", "Bolso BP", "Diciembre", "225", "1350"], ["BP", "Familia Protegida BP", "Diciembre", "25", "150"], ["BP", "Saldo Protegido BP", "Diciembre", "25", "150"], ["BP", "Muvit BP", "Diciembre", "25", "150"], ["COOPENAE", "Asistencia NAE", "Diciembre", "20", "140"], ["COOPENAE", "AP Rentas NAE", "Diciembre", "120", "720"], ["COOPENAE", "FRE NAE", "Diciembre", "110", "770"], ["COOPENAE", "RDH NAE", "Diciembre", "125", "750"], ["COOPEANDE", "FRE ANDE", "Diciembre", "100", "916"], ["COOPEANDE", "Asistencias", "Diciembre", "0", "0"], ["CREDIX", "Multiasistencia Credix", "Diciembre", "40", "316"], ["CREDIX", "Marchamito Credix", "Diciembre", "60", "600"], ["CREDIX", "Saldo Fácil Credix", "Diciembre", "125", "875"], ["PURDY", "Asistencias Purdy", "Diciembre", "50", "550"], ["MONIFAI", "Monifai Asistencias", "Diciembre", "300", "7200"], ["CORREOS", "PASAPORTE NO RENOVABLE CORREOS CR", "Diciembre", "0", "0"], ["ISHOP", "Ipad / Mac", "Diciembre", "0", "0"], ["ISHOP", "Iphone", "Diciembre", "0", "0"], ["ISHOP", "Watch", "Diciembre", "0", "0"]], "supervisores": ["Jacqueline V", "Jeffrey V", "Jimmy F", "Juan V", "Karen A", "Michael R", "Noelia M", "Ricardo B", "Ronald A"], "meses": ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]};</script>
+<div id="metaModal" class="ovl hidden">
+  <div class="modal">
+    <div class="mh"><h3>Metas — <span id="metaCtx"></span></h3><button id="metaX">✕</button></div>
+    <div class="mb">
+      <div class="hint">Pegá la tabla de metas o subí un Excel. Columnas: <b>Supervisor · Empresa · Categoría · Producto · Ventas · FB</b>. Las filas de <i>Total</i> se ignoran. Se aplican al supervisor, mes y año seleccionados arriba.</div>
+      <div class="seg" style="margin-top:12px"><button data-mt="paste" class="on">Pegar tabla</button><button data-mt="file">Subir Excel</button></div>
+      <textarea id="metaText" placeholder="Ricardo B | BCR | Recurrente | AP Desempleo BCR | 42 | 311&#10;Ricardo B | BCR | Recurrente | Carretera BCR | 113 | 634&#10;…"></textarea>
+      <label class="mdrop hidden" id="metaDrop">Hacé clic o arrastrá el Excel de metas aquí<input type="file" id="metaFile" accept=".xlsx,.xls" class="hidden"></label>
+      <div id="metaPrev"></div>
+    </div>
+    <div class="mf">
+      <button class="btn ghost" id="metaClear">Usar metas del sistema</button>
+      <button class="btn" id="metaSave" style="background:var(--gold)">Guardar meta</button>
+    </div>
+  </div>
+</div>
+<script>
+/* ============ APP ============ */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const MESES=REF.meses;
+const SPCOL={BCR:'#C8102E',BNCR:'#4C9A2A',BP:'#E2620E','BANCO POPULAR':'#E2620E',COOPENAE:'#E8820C',COOPEANDE:'#3A7D8C',CREDIX:'#6B4E9E',MONIFAI:'#B0473F',PURDY:'#2B3138',CORREOS:'#D4A017',ISHOP:'#556065'};
+const spcol=s=>SPCOL[(s||'').toUpperCase()]||'#7C8A8C';
+const SP_ALIAS={'BANCO POPULAR':'BP','BANCO NACIONAL':'BNCR','CORREOS DE COSTA RICA':'CORREOS'};
+function canonSp(s){s=norm(s).toUpperCase();return SP_ALIAS[s]||s;}
+const SP_ORDER=['BCR','BNCR','COOPENAE','BP','COOPEANDE','CREDIX','MONIFAI','PURDY','CORREOS','ISHOP'];
+const fmt=(n,d=0)=>n==null||isNaN(n)?'—':Number(n).toLocaleString('es-CR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct=(n,d=1)=>n==null||isNaN(n)?'—':(n*100).toLocaleString('es-CR',{minimumFractionDigits:d,maximumFractionDigits:d})+'%';
+const norm=s=>(s==null?'':String(s)).trim();
+const monthIdx=m=>MESES.indexOf(norm(m).toLowerCase());
+
+let STATE={rows:[],anios:[],view:'resumen',ready:false,charts:{},metaOv:{},fSponsor:'__ALL__',fZona:'__ALL__',fSuc:'__ALL__',alTab:'sponsors',bitacora:[]};
+function setSucSel(v){STATE.sucSel=v;render();}
+
+/* ===== BITÁCORA F2F ===== */
+function bitSponsors(){let a=[...new Set(STATE.rows.map(r=>r.sp).filter(Boolean))];if(!a.length)a=SP_ORDER.slice();return a.sort((x,y)=>{const ix=SP_ORDER.indexOf(x),iy=SP_ORDER.indexOf(y);return (ix<0?99:ix)-(iy<0?99:iy)||x.localeCompare(y);});}
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
+function fmtDate(iso){if(!iso)return '';const [y,m,d]=iso.split('-');if(!y)return iso;return d+' '+cap(MESES[(+m)-1]||'')+' '+y;}
+function bitToggle(i){const cb=document.querySelector('#content input[data-idx="'+i+'"]');const box=document.getElementById('bitf-'+i);if(cb&&box)box.classList.toggle('hidden',!cb.checked);}
+function bitSave(){
+  const SPS=bitSponsors().concat(['Otro']);const date=(document.getElementById('bitDate')||{}).value||new Date().toISOString().slice(0,10);
+  const items=[];
+  SPS.forEach((sp,i)=>{const cb=document.querySelector('#content input[data-idx="'+i+'"]');if(cb&&cb.checked){
+    const t=((document.getElementById('bitt-'+i)||{}).value||'').trim();
+    const v=parseInt((document.getElementById('bitv-'+i)||{}).value)||0;
+    const of=((document.getElementById('bito-'+i)||{}).value||'').trim();
+    items.push({sp,oficina:of,text:t,ventas:v,custom:sp==='Otro'});}});
+  if(!items.length){alert('Marcá al menos un sponsor o "Otro".');return;}
+  STATE.bitacora.push({id:Date.now(),sup:F().sup,date,items,ts:Date.now()});
+  saveBitacora();render();
+}
+function escAttr(s){return String(s||'').replace(/"/g,'&quot;').replace(/\n/g,' ').replace(/</g,'&lt;');}
+function dayLogHTML(f,dia){
+  const mi=monthIdx(f.mes)+1;
+  const es=(STATE.bitacora||[]).filter(e=>(f.sup==='__ALL__'||e.sup===f.sup)&&e.date&&(+e.date.split('-')[0]===f.anio)&&(+e.date.split('-')[1]===mi)&&(+e.date.split('-')[2]===dia));
+  if(!es.length)return '';
+  let h=`<div style="font-weight:700;margin-bottom:5px;color:#F2C879">Día ${dia} · ${cap(f.mes)} ${f.anio}</div>`;
+  es.forEach(e=>{let tot=0;e.items.forEach(it=>{tot+=(+it.ventas||0);h+=`<div style="margin-top:4px"><b style="color:#fff">${it.sp}${it.oficina?' · '+escapeHtml(it.oficina):''}:</b> ${escapeHtml(it.text||'—')}${it.ventas?` <span style="color:#8FD3A5">(${it.ventas} vtas)</span>`:''}</div>`;});if(tot)h+=`<div style="margin-top:5px;color:#8FD3A5;font-weight:700">Total del día: ${tot} ventas</div>`;});
+  return h;
+}
+function bitDel(id){if(confirm('¿Borrar esta entrada de la bitácora?')){STATE.bitacora=STATE.bitacora.filter(e=>e.id!==id);saveBitacora();render();}}
+function escText(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function setBitEdit(id){STATE.bitEdit=id;render();}
+function bitEditCancel(){STATE.bitEdit=null;render();}
+function biteRowHTML(label,text,ventas,oficina){return `<div class="bited-row" style="padding:9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:#fff">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span class="sdot" style="background:${spcol(label)}"></span>
+      <input class="bl ctrl" value="${escAttr(label||'')}" placeholder="Sponsor u Otro" style="min-width:150px">
+      <input class="bo ctrl" value="${escAttr(oficina||'')}" placeholder="Oficina" style="min-width:170px">
+      <span style="font-size:12px;color:var(--mute)">Ventas</span><input class="bv ctrl winput num" type="number" min="0" value="${ventas||0}">
+      <a href="#" onclick="this.closest('.bited-row').remove();return false" style="color:var(--neg);font-size:12px;margin-left:auto">quitar</a>
+    </div>
+    <textarea class="bt ctrl" style="width:100%;height:56px;margin-top:6px;resize:vertical" placeholder="¿Qué se hizo?">${escText(text)}</textarea>
+  </div>`;}
+function bitEditAdd(){const c=document.getElementById('bited-items');if(c)c.insertAdjacentHTML('beforeend',biteRowHTML('','',0));}
+function bitEditSave(id){
+  const date=(document.getElementById('bited-date')||{}).value;const items=[];
+  document.querySelectorAll('#content .bited-row').forEach(row=>{
+    const label=((row.querySelector('.bl')||{}).value||'').trim();
+    const oficina=((row.querySelector('.bo')||{}).value||'').trim();
+    const ventas=parseInt((row.querySelector('.bv')||{}).value)||0;
+    const text=((row.querySelector('.bt')||{}).value||'').trim();
+    if(!label&&!text&&!ventas)return;
+    items.push({sp:label||'Actividad',oficina,text,ventas,custom:!bitSponsors().includes(label)});
+  });
+  if(!items.length){alert('La entrada quedó vacía. Agregá al menos un ítem o cancelá.');return;}
+  const e=STATE.bitacora.find(x=>x.id===id);if(e){e.items=items;if(date)e.date=date;}
+  saveBitacora();STATE.bitEdit=null;render();
+}
+function saveBitacora(){try{localStorage.setItem('asys_bitacora',JSON.stringify(STATE.bitacora));}catch(e){} idbSet('bitacora',STATE.bitacora);}
+function loadBitacora(){try{const s=localStorage.getItem('asys_bitacora');if(s)STATE.bitacora=JSON.parse(s)||[];}catch(e){} idbGet('bitacora').then(v=>{if(v&&v.length&&(!STATE.bitacora||!STATE.bitacora.length)){STATE.bitacora=v;if(STATE.view==='bitacora'&&STATE.ready)render();}});}
+
+function tnormB(t){t=(t||'').toLowerCase();if(t.includes('recurr'))return 'Recurrente';if(t.includes('nica')||t==='unica')return 'Única';if(t.includes('asist'))return 'Asistencia';return 'Otro';}
+function vtDiaria(f){
+  const rows=filt(f);
+  if(!rows.length)return '<div class="panel"><div class="pb hint">Sin colocación para este filtro.</div></div>';
+  const hasDia=rows.some(r=>r.dia>0);
+  const TIP=['Recurrente','Única','Asistencia'];
+  const cell=new Map(),rowTot=new Map(),spTot=new Map(),tipTot=new Map(),colTot=new Map();const set=new Set();
+  let grand=0;
+  rows.forEach(r=>{const sp=r.sp,tp=tnormB(r.tipo);const k=hasDia?r.dia:r.sem;if(!k)return;set.add(k);
+    cell.set(sp+'|'+tp+'|'+k,(cell.get(sp+'|'+tp+'|'+k)||0)+1);
+    rowTot.set(sp+'|'+k,(rowTot.get(sp+'|'+k)||0)+1);
+    colTot.set(k,(colTot.get(k)||0)+1);
+    spTot.set(sp,(spTot.get(sp)||0)+1);
+    tipTot.set(sp+'|'+tp,(tipTot.get(sp+'|'+tp)||0)+1);grand++;});
+  const cols=[...set].sort((a,b)=>a-b);
+  const sps=sortedSponsors(groupSum(rows,'sp'));
+  STATE._dayLogs={};
+  const dayTh=cols.map(c=>{const html=hasDia?dayLogHTML(f,c):'';if(html)STATE._dayLogs[c]=html;return `<th class="daycol" data-day="${c}" title="${hasDia?('Día '+c):('Sem '+c)}" style="background:#F2A93B;color:#3a2a10;${html?'cursor:help':''}">${c}${html?' •':''}</th>`;}).join('');
+  const head=`<thead><tr><th style="text-align:left;background:#EDF0F3">Sponsor / Tipo</th>${dayTh}<th style="background:#E3E9EF">Total general</th></tr></thead>`;
+  let body='';
+  sps.forEach(sp=>{
+    body+=`<tr style="background:#F3F5F7"><td class="b"><span class="sdot" style="background:${spcol(sp)}"></span>${sp}</td>${cols.map(c=>`<td class="num b">${rowTot.get(sp+'|'+c)||'·'}</td>`).join('')}<td class="num b">${spTot.get(sp)||0}</td></tr>`;
+    TIP.forEach(tp=>{if(!tipTot.get(sp+'|'+tp))return;
+      body+=`<tr><td style="padding-left:24px;color:var(--mute)">${tp}</td>${cols.map(c=>`<td class="num" style="color:var(--mute)">${cell.get(sp+'|'+tp+'|'+c)||'·'}</td>`).join('')}<td class="num">${tipTot.get(sp+'|'+tp)||0}</td></tr>`;});
+  });
+  const tg=`<tr class="trow-tot"><td>Total general</td>${cols.map(c=>`<td class="num">${colTot.get(c)||0}</td>`).join('')}<td class="num">${grand}</td></tr>`;
+  return `<div class="panel"><div class="ph"><h3>Colocación diaria (VT_DIARIA)</h3><span class="note">${cap(f.mes)} ${f.anio} · ${f.sup==='__ALL__'?'Líder':f.sup}${hasDia?' · pasá el mouse sobre el día para ver la bitácora':' · por semana'}</span></div>
+    <div class="pb scroll-x">${hasDia?'':'<div style="margin-bottom:12px;padding:12px;background:#F6E9E7;border-radius:8px"><b>Este cuadro está por semana.</b> Los datos cargados no traen el día del mes. <button class="btn" style="margin-left:8px" onclick="document.getElementById(\'file\').click()">Importar Excel para ver por día</button></div>'}<table style="font-size:12px">${head}<tbody>${body}${tg}</tbody></table></div></div>`;
+}
+function vBitacora(f){
+  const SPS=bitSponsors().concat(['Otro']);const today=new Date().toISOString().slice(0,10);
+  const sup=f.sup;
+  const entries=(STATE.bitacora||[]).filter(e=>sup==='__ALL__'||e.sup===sup).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.ts-a.ts));
+  const totVentas=entries.reduce((s,e)=>s+e.items.reduce((x,it)=>x+(+it.ventas||0),0),0);
+  const cuadro=vtDiaria(f);
+  const form=`
+  <div class="panel" style="border-top:3px solid var(--accent)"><div class="ph"><h3>¿Qué hicimos hoy?</h3><span class="note">registro F2F por sponsor / actividad</span></div>
+    <div class="pb">
+      <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+        <div class="fgrp" style="flex-direction:column;align-items:flex-start;gap:4px"><label>Día</label><input type="date" id="bitDate" class="ctrl" value="${today}"></div>
+        <div class="fgrp" style="flex-direction:column;align-items:flex-start;gap:4px"><label>Supervisor</label><div class="pill">${sup==='__ALL__'?'Líder (elegí supervisor arriba)':sup}</div></div>
+      </div>
+      <label style="font-weight:600;display:block;margin-bottom:8px">Sponsors visitados <span class="flat" style="font-weight:400">(marcá y detallá; anotá la oficina y las ventas. Usá "Otro" si no visitaste sponsor, ej. MCI)</span></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+        ${SPS.map((sp,i)=>`<label class="chip" style="cursor:pointer"><input type="checkbox" data-idx="${i}" onchange="bitToggle(${i})" style="margin-right:7px;vertical-align:-1px"><span class="cdot" style="background:${sp==='Otro'?'#8A929A':spcol(sp)}"></span>${sp}</label>`).join('')}
+      </div>
+      <div id="bitFields" style="margin-top:10px">
+        ${SPS.map((sp,i)=>`<div id="bitf-${i}" class="hidden" style="margin-bottom:12px;padding:10px;border:1px solid var(--line);border-radius:8px">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label style="font-weight:700"><span class="sdot" style="background:${sp==='Otro'?'#8A929A':spcol(sp)}"></span>${sp}:</label>
+            <input id="bito-${i}" class="ctrl" placeholder="${sp==='Otro'?'Actividad / lugar (opcional)':'Oficina visitada'}" style="min-width:200px">
+            <span style="margin-left:auto;font-size:12px;color:var(--mute)">Ventas en la visita</span><input id="bitv-${i}" class="ctrl winput num" type="number" min="0" placeholder="0"></div>
+          <textarea id="bitt-${i}" class="ctrl" style="width:100%;height:60px;margin-top:6px;resize:vertical" placeholder="${sp==='Otro'?'¿Qué se hizo? Ej. MCI, reunión, capacitación, evento…':'¿Qué se hizo en '+sp+'? Dinámicas, seguimiento, rankings, acuerdos, visitas…'}"></textarea></div>`).join('')}
+      </div>
+      <div style="margin-top:10px"><button class="btn" onclick="bitSave()">Guardar entrada</button></div>
+    </div></div>`;
+  const log=`
+  <div class="panel"><div class="ph"><h3>Bitácora consolidada</h3><span class="note">${entries.length} registro${entries.length===1?'':'s'} · total ventas ${fmt(totVentas)}${sup==='__ALL__'?' · todos':' · '+sup}</span></div>
+    <div class="pb">${entries.length?entries.map(e=>{const ev=e.items.reduce((x,it)=>x+(+it.ventas||0),0);
+      if(STATE.bitEdit===e.id){return `
+      <div style="border:2px solid var(--accent);border-radius:8px;padding:12px;margin-bottom:12px">
+        <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:10px;flex-wrap:wrap">
+          <div class="fgrp" style="flex-direction:column;align-items:flex-start;gap:4px"><label>Día</label><input type="date" id="bited-date" class="ctrl" value="${e.date}"></div>
+          <div style="margin-left:auto"><button class="btn" onclick="bitEditSave(${e.id})">Guardar cambios</button> <button class="btn ghost" onclick="bitEditCancel()">Cancelar</button></div>
+        </div>
+        <div id="bited-items">${e.items.map(it=>biteRowHTML(it.sp,it.text,it.ventas,it.oficina)).join('')}</div>
+        <button class="btn ghost" onclick="bitEditAdd()">+ Agregar ítem</button>
+      </div>`;}
+      return `
+      <div style="border-left:3px solid var(--accent);padding:9px 13px;margin-bottom:12px;background:#FBFAF6;border-radius:8px">
+        <div style="font-weight:700;color:var(--wine)">${fmtDate(e.date)}${sup==='__ALL__'&&e.sup&&e.sup!=='__ALL__'?' · '+e.sup:''}
+          <span class="badge" style="margin-left:8px;background:#E7F1EB;color:var(--pos)">${fmt(ev)} ventas</span>
+          <span style="float:right"><a href="#" onclick="setBitEdit(${e.id});return false" style="color:var(--accent);font-size:12px;text-decoration:none;margin-right:12px">✎ editar</a><a href="#" onclick="bitDel(${e.id});return false" style="color:var(--neg);font-size:12px;text-decoration:none">✕ borrar</a></span></div>
+        ${e.items.map(it=>`<div style="margin-top:7px"><span class="sdot" style="background:${it.custom?'#8A929A':spcol(it.sp)}"></span><b>${it.sp}${it.oficina?' · '+escapeHtml(it.oficina):''}:</b> ${it.text?escapeHtml(it.text):'<span class="flat">(sin detalle)</span>'}${it.ventas?` <span class="pos">(${it.ventas} vtas)</span>`:''}</div>`).join('')}
+      </div>`}).join(''):'<p class="hint">Aún no hay entradas. Completá el formulario: día, sponsors visitados (o "Otro"), la oficina, qué se hizo y las ventas.</p>'}
+    </div></div>`;
+  return cuadro+form+log;
+}
+
+
+function setRk(m){STATE.rkMode=m;render();}
+function setAlTab(t){STATE.alTab=t;render();}
+function metaKey(f){return f.sup+'|'+f.mes+'|'+f.anio;}
+
+/* ---- Nav ---- */
+const NAV=[
+ ['resumen','Resumen',svg('M4 13h6V4H4zM14 20h6V10h-6zM4 20h6v-4H4zM14 8h6V4h-6z')],
+ ['alertas','Alertas',svg('M12 3l9 16H3zM12 10v4M12 17v.5')],
+ ['sponsors','Sponsors',svg('M3 3v18h18M7 15l3-4 3 3 5-7')],
+ ['scorecard','Scorecard',svg('M4 4h16v16H4zM4 10h16M10 4v16')],
+ ['sucursales','Sucursales',svg('M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6')],
+ ['comparativo','Interanual',svg('M4 18V6M4 18h16M9 15V9M14 18V4M19 18v-7')],
+ ['comparador','Comparativo',svg('M9 3v18M15 3v18M4 8h5M15 8h5M4 14h5M15 14h5')],
+ ['ranking','Ranking',svg('M8 21h8M12 17v4M6 4h12v5a6 6 0 01-12 0zM6 6H3v2a3 3 0 003 3M18 6h3v2a3 3 0 01-3 3')],
+ ['semanal','Proyección',svg('M3 3v18h18M7 14l4-4 3 3 5-6')],
+ ['bitacora','Bitácora',svg('M6 2h9l5 5v15H6zM15 2v5h5M9 13h7M9 17h7M9 9h3')],
+];
+function svg(p){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="${p}"/></svg>`}
+function buildNav(){
+  $('#nav').innerHTML=NAV.map(([k,l,ic])=>`<button class="navitem ${k==STATE.view?'on':''}" data-v="${k}">${ic}<span>${l}</span></button>`).join('');
+  $$('#nav .navitem').forEach(b=>b.onclick=()=>{STATE.view=b.dataset.v;buildNav();render()});
+}
+buildNav();
+/* tooltip enriquecido para columnas de día en la Bitácora */
+(function(){const tip=document.createElement('div');tip.id='daytip';tip.style.cssText='position:fixed;z-index:200;max-width:340px;background:#12252B;color:#EAF1F2;padding:10px 12px;border-radius:9px;font-size:12px;line-height:1.5;box-shadow:0 10px 30px rgba(0,0,0,.3);pointer-events:none;display:none';document.body.appendChild(tip);
+  document.addEventListener('mousemove',e=>{if(tip.style.display==='block'){tip.style.left=Math.min(e.clientX+14,window.innerWidth-352)+'px';tip.style.top=Math.min(e.clientY+16,window.innerHeight-tip.offsetHeight-10)+'px';}});
+  document.addEventListener('mouseover',e=>{const th=e.target.closest&&e.target.closest('.daycol');if(th&&th.dataset.day&&STATE._dayLogs&&STATE._dayLogs[th.dataset.day]){tip.innerHTML=STATE._dayLogs[th.dataset.day];tip.style.display='block';}});
+  document.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('.daycol'))tip.style.display='none';});
+})();
+function fillSelect(el,arr,val){el.innerHTML=arr.map(o=>`<option value="${o.v??o}">${o.l??o}</option>`).join('');if(val!=null)el.value=val;}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1)}
+/* Fecha de hoy y días hábiles automáticos */
+function todayInfo(){const d=new Date();return {y:d.getFullYear(),mi:d.getMonth(),day:d.getDate()};}
+/* Feriados de Costa Rica (fijos + Semana Santa calculada) */
+function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;return {m:month-1,d:day};}
+const CR_FIJOS=[[0,1],[3,11],[4,1],[6,25],[7,2],[7,15],[8,15],[11,1],[11,25]]; // 1ene,11abr,1may,25jul,2ago,15ago,15sep,1dic,25dic
+function crHolidaySet(y,mi){
+  const set=new Set();
+  CR_FIJOS.forEach(([m,d])=>{if(m===mi)set.add(d);});
+  const e=easter(y);const js=new Date(y,e.m,e.d-3),vs=new Date(y,e.m,e.d-2); // Jueves y Viernes Santo
+  if(js.getMonth()===mi)set.add(js.getDate());
+  if(vs.getMonth()===mi)set.add(vs.getDate());
+  return set;
+}
+function crHolidayNames(y,mi){
+  const N={'0-1':'Año Nuevo','3-11':'Juan Santamaría','4-1':'Día del Trabajo','6-25':'Anexión de Nicoya','7-2':'Virgen de los Ángeles','7-15':'Día de la Madre','8-15':'Independencia','11-1':'Abolición del Ejército','11-25':'Navidad'};
+  const out=[];CR_FIJOS.forEach(([m,d])=>{if(m===mi){const wd=new Date(y,m,d).getDay();if(wd!==0&&wd!==6)out.push(d+' — '+N[m+'-'+d]);}});
+  const e=easter(y);[['Jueves Santo',e.d-3],['Viernes Santo',e.d-2]].forEach(([nm,dd])=>{const dt=new Date(y,e.m,dd);if(dt.getMonth()===mi)out.push(dt.getDate()+' — '+nm);});
+  return out.sort((a,b)=>parseInt(a)-parseInt(b));
+}
+function bizDaysInMonth(y,mi){const H=crHolidaySet(y,mi);let c=0;const last=new Date(y,mi+1,0).getDate();for(let d=1;d<=last;d++){const wd=new Date(y,mi,d).getDay();if(wd!==0&&wd!==6&&!H.has(d))c++;}return c;}
+function bizDaysUpTo(y,mi,day){const H=crHolidaySet(y,mi);let c=0;for(let d=1;d<=day;d++){const wd=new Date(y,mi,d).getDay();if(wd!==0&&wd!==6&&!H.has(d))c++;}return c;}
+function autoDH_DT(){
+  const y=+$('#fAnio').value||todayInfo().y;
+  const mi=monthIdx($('#fMes').value); if(mi<0)return;
+  const t=todayInfo();
+  const dh=bizDaysInMonth(y,mi);
+  let dt;
+  if(y<t.y||(y===t.y&&mi<t.mi))dt=dh;               // mes ya cerrado
+  else if(y===t.y&&mi===t.mi)dt=Math.max(1,bizDaysUpTo(y,mi,t.day)); // mes en curso
+  else dt=0;                                         // mes futuro
+  $('#fDH').value=dh; $('#fDT').value=dt;
+  const el=$('#hoy');if(el){const hol=crHolidayNames(y,mi);
+    el.innerHTML='📅 Hoy '+t.day+' '+cap(MESES[t.mi]).slice(0,3)+' · '+dh+' hábiles'+(hol.length?' · '+hol.length+' feriado'+(hol.length>1?'s':''):'');
+    el.title='Feriados CR en '+cap(MESES[mi])+' '+y+': '+(hol.length?hol.join(' · '):'ninguno')+'.  Días hábiles = lun–vie menos feriados.';}
+}
+fillSelect($('#fMes'),MESES.map((m,i)=>({v:m,l:cap(m)})),MESES[todayInfo().mi]);
+autoDH_DT();
+['#fSup','#fDH','#fDT'].forEach(id=>{const el=$(id);['change','input'].forEach(ev=>el.addEventListener(ev,()=>{if(STATE.ready)render()}));});
+['#fMes','#fAnio'].forEach(id=>$(id).addEventListener('change',()=>{autoDH_DT();if(STATE.ready)render();}));
+
+/* ---- Import ---- */
+const fileEl=$('#file'),drop=$('#drop');
+$('#btnImport2').onclick=()=>fileEl.click();
+$('#btnExport').onclick=exportXlsx;
+$('#btnPPT').onclick=generatePPT;
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('hov')});
+drop.addEventListener('dragleave',()=>drop.classList.remove('hov'));
+drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('hov');if(e.dataTransfer.files[0])readFile(e.dataTransfer.files[0])});
+fileEl.addEventListener('change',e=>{if(e.target.files[0])readFile(e.target.files[0])});
+
+function setProg(html){$('#loadmsg').innerHTML=html;}
+function showProg(msg){setProg('<span class="spinner"></span>'+msg);}
+function progSheets(names){setProg('No reconocí una hoja con datos de colocación.<br>Hojas del archivo: <b>'+(names||[]).join(' · ')+'</b>.<br>Decime cuál tiene los datos y lo ajusto.');}
+
+function readFile(f){
+  showProg('Leyendo <b>'+f.name+'</b>…');
+  const rd=new FileReader();
+  rd.onerror=()=>setProg('No se pudo leer el archivo.');
+  rd.onload=e=>startParse(e.target.result);
+  rd.readAsArrayBuffer(f);
+}
+function startParse(buf){
+  showProg('Procesando registros… <span style="opacity:.7">con archivos grandes puede tardar ~30&nbsp;s</span>');
+  let worker=null;
+  try{worker=new Worker(URL.createObjectURL(new Blob([WORKER_BODY],{type:'text/javascript'})));}catch(err){worker=null;}
+  if(worker){
+    worker.onmessage=ev=>{const d=ev.data;worker.terminate();
+      if(d.error){ if(d.error==='no-sheet'){progSheets(d.sheets);} else { showProg('Reintentando…'); mainParse(buf);} return; }
+      finalize(d.rows,d.anios,d.ciNames,d.sheet,d.hr);};
+    worker.onerror=()=>{worker.terminate();mainParse(buf);};
+    try{worker.postMessage({buf,sucsup:REF.sucsup});}catch(e){mainParse(buf);}
+  }else mainParse(buf);
+}
+function mainParse(buf){
+  showProg('Procesando en este hilo… esperá unos segundos.');
+  setTimeout(()=>{try{
+    const wb=XLSX.read(new Uint8Array(buf),{type:'array',dense:true,cellDates:false,cellNF:false,cellText:false,cellStyles:false,cellFormula:false});
+    const res=loadSheetRows(wb);
+    if(!res){progSheets(wb.SheetNames);return;}
+    const ci=colIdx(res.header);const out=buildRows(res.aoa,res.hr,ci,REF.sucsup);
+    const ciNames={};for(const k in ci)ciNames[k]=ci[k]>=0?res.header[ci[k]]:null;
+    finalize(out.rows,out.anios,ciNames,res.sheet,res.hr);
+  }catch(e){setProg('Error al procesar: '+(e.message||e));}},50);
+}
+function finalize(rows,anios,ciNames,sheet,hr,savedAt){
+  if(!savedAt)STATE._freshImport=true;
+  STATE.rows=rows;STATE.anios=anios;STATE.cm=ciNames;STATE.sheetInfo={sheet,headerRow:hr};
+  STATE.savedAt=savedAt||Date.now();
+  loadOv();
+  if(!savedAt){idbSet('data',{rows,anios,ciNames,sheet,hr,savedAt:STATE.savedAt});} // auto-guardado solo en importaciones nuevas
+  const sups=[...new Set(rows.map(r=>r.sup).filter(s=>s&&s!=='CERRADA'&&!/SIN VISITAS/i.test(s)))].sort();
+  const cnt={};rows.forEach(r=>{if(r.anio&&r.mes){const k=r.anio+'|'+r.mes;cnt[k]=(cnt[k]||0)+1;}});
+  let best=null,bs=-1;Object.keys(cnt).forEach(k=>{const[a,m]=k.split('|');const sc=(+a)*12+monthIdx(m);if(sc>bs){bs=sc;best={anio:+a,mes:m};}});
+  // preferir el mes/año ACTUAL si tiene datos; si no, el más reciente
+  const t=todayInfo();const curMes=MESES[t.mi];
+  let target= cnt[t.y+'|'+curMes] ? {anio:t.y,mes:curMes} : best;
+  fillSelect($('#fSup'),[{v:'__ALL__',l:'Todos (Líder)'},...sups.map(s=>({v:s,l:s}))],sups.includes('Ricardo B')?'Ricardo B':'__ALL__');
+  fillSelect($('#fAnio'),anios.length?anios:[t.y],target?target.anio:anios[anios.length-1]);
+  if(target)$('#fMes').value=target.mes;
+  autoDH_DT();
+  if(target){const ss=$('#fSup').value;const has=rows.some(r=>r.anio===target.anio&&r.mes===target.mes&&(ss==='__ALL__'||r.sup===ss));if(!has)$('#fSup').value='__ALL__';}
+  STATE.ready=true;STATE.diag={n:rows.length,cm:ciNames,anios,sups,cnt};
+  // mapa sucursal->sponsor y ejecutivo->sponsor (dominante)
+  const sm={},em={},vc={};rows.forEach(r=>{if(r.suc){(sm[r.suc]=sm[r.suc]||{});sm[r.suc][r.sp]=(sm[r.suc][r.sp]||0)+1;}if(r.ven){(em[r.ven]=em[r.ven]||{});em[r.ven][r.sp]=(em[r.ven][r.sp]||0)+1;if(r.suc){(vc[r.ven]=vc[r.ven]||{});vc[r.ven][r.suc]=(vc[r.ven][r.suc]||0)+1;}}});
+  STATE.sucSp={};Object.keys(sm).forEach(s=>{STATE.sucSp[s]=Object.keys(sm[s]).sort((a,b)=>sm[s][b]-sm[s][a])[0];});
+  STATE.venSp={};Object.keys(em).forEach(s=>{STATE.venSp[s]=Object.keys(em[s]).sort((a,b)=>em[s][b]-em[s][a])[0];});
+  STATE.venSuc={};Object.keys(vc).forEach(s=>{STATE.venSuc[s]=Object.keys(vc[s]).sort((a,b)=>vc[s][b]-vc[s][a])[0];});
+  renderChips();
+  $('#chips').classList.remove('hidden');
+  $('#empty').classList.add('hidden');$('#content').classList.remove('hidden');
+  render();
+}
+function renderChips(){
+  const rows=STATE.rows;
+  const spPresent=[...new Set(rows.map(r=>r.sp).filter(Boolean))].sort((a,b)=>{const ia=SP_ORDER.indexOf(a),ib=SP_ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b);});
+  const zoPresent=[...new Set(rows.map(r=>r.zona).filter(z=>z&&!/^CERRAD/i.test(z)))].sort();
+  const spChips=`<div class="chipset"><span class="cl">Sponsor</span>
+    <button class="chip ${STATE.fSponsor==='__ALL__'?'on':''}" data-sp="__ALL__">Todos</button>
+    ${spPresent.map(s=>`<button class="chip ${STATE.fSponsor===s?'on':''}" data-sp="${s}"><span class="cdot" style="background:${spcol(s)}"></span>${s}</button>`).join('')}</div>`;
+  const zoChips=zoPresent.length?`<div class="chip-sep"></div><div class="chipset"><span class="cl">Zona</span>
+    <button class="chip ${STATE.fZona==='__ALL__'?'on':''}" data-zo="__ALL__">Todas</button>
+    ${zoPresent.map(z=>`<button class="chip ${STATE.fZona===z?'on':''}" data-zo="${z}">${z}</button>`).join('')}</div>`:'';
+  $('#chips').innerHTML=spChips+zoChips;
+  $$('#chips [data-sp]').forEach(b=>b.onclick=()=>{STATE.fSponsor=b.dataset.sp;renderChips();render();});
+  $$('#chips [data-zo]').forEach(b=>b.onclick=()=>{STATE.fZona=b.dataset.zo;renderChips();render();});
+}
+
+/* ---- helpers de parseo (compartidos con el worker vía toString) ---- */
+const deacc=s=>String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const hkey=s=>deacc(s).toUpperCase().replace(/[^A-Z0-9$]/g,'');
+function isoWeek(d){const t=new Date(Date.UTC(d.getUTCFullYear?d.getUTCFullYear():d.getFullYear(),d.getUTCMonth?d.getUTCMonth():d.getMonth(),d.getUTCDate?d.getUTCDate():d.getDate()));const day=(t.getUTCDay()+6)%7;t.setUTCDate(t.getUTCDate()-day+3);const first=new Date(Date.UTC(t.getUTCFullYear(),0,4));return 1+Math.round(((t-first)/86400000-3+((first.getUTCDay()+6)%7))/7);}
+function serialToDate(n){return new Date(Date.UTC(1899,11,30)+Math.round(n)*86400000);}
+function loadSheetRows(wb){
+  const KNOWN=['SPONSOR','VENDEDOR','SUCURSAL','MES','SEMANA','TIPOPRIMA','PRIMA$','ESTADO','SUPERVISOR','POLIZA','CEDULA','PRODUCTO','ANO'];
+  const cand=wb.SheetNames.map(name=>{const ws=wb.Sheets[name];if(!ws||!ws['!ref'])return null;const rg=XLSX.utils.decode_range(ws['!ref']);return {name,ws,rows:rg.e.r-rg.s.r};}).filter(Boolean).sort((a,b)=>((/venta/i.test(b.name)?1:0)-(/venta/i.test(a.name)?1:0))||b.rows-a.rows);
+  for(const c of cand){
+    const aoa=XLSX.utils.sheet_to_json(c.ws,{header:1,blankrows:false,defval:null});
+    if(!aoa.length)continue;
+    let hr=-1,hs=1;
+    for(let i=0;i<Math.min(20,aoa.length);i++){const toks=(aoa[i]||[]).map(x=>hkey(x));const sc=KNOWN.reduce((s,k)=>s+(toks.some(t=>t&&t.includes(k))?1:0),0);if(sc>hs){hs=sc;hr=i;}}
+    if(hr<0)continue;
+    return {aoa,hr,header:aoa[hr].map(x=>String(x==null?'':x).trim()),sheet:c.name};
+  }
+  return null;
+}
+function colIdx(header){
+  const H={};header.forEach((h,i)=>{const k=hkey(h);if(k&&!(k in H))H[k]=i;});
+  const pick=(...c)=>{for(const x of c)if(x in H)return H[x];for(const x of c){const k=Object.keys(H).find(k=>k.includes(x));if(k)return H[k];}return -1;};
+  return {sp:pick('SPONSOR'),suc:pick('SUCURSALHOMOLOGADA','SUCURSAL','SEDE'),ven:pick('VENDEDOR','ASESOR','EJECUTIVO'),fb:pick('PRIMA$','PRIMAUSD','PRIMADOLAR','FB'),mes:pick('MES'),sem:pick('SEMANA','SEM'),tipo:pick('TIPOPRIMA','TIPO'),anio:pick('ANO','YEAR'),sup:pick('SUPERVISOR'),zona:pick('ZONASPONSOR','ZONA'),prod:pick('PRODUCTOFINAL','PRODUCTO'),est:pick('ESTADO'),fec:pick('FEMISION','FECHAEMISION','FECHA'),dia:pick('DIANUMERO','DIADELMES')};
+}
+function buildRows(aoa,hr,ci,sucsup){
+  let revSup=null;if(ci.sup<0&&sucsup){revSup={};Object.keys(sucsup).forEach(s=>sucsup[s].forEach(x=>revSup[hkey(x)]=s));}
+  const rows=[];const anios=new Set();
+  for(let i=hr+1;i<aoa.length;i++){const r=aoa[i];if(!r)continue;
+    let anio=ci.anio>=0?(parseInt(String(r[ci.anio]).replace(/[^0-9]/g,''))||null):null;
+    let mes=ci.mes>=0?norm(r[ci.mes]).toLowerCase():'';
+    let sem=ci.sem>=0?(+r[ci.sem]||0):0;
+    if((!anio||!mes||!sem)&&ci.fec>=0){let v=r[ci.fec];let d=(v instanceof Date)?v:(typeof v==='number'?serialToDate(v):(v?new Date(v):null));if(d&&!isNaN(d)){if(!anio)anio=d.getUTCFullYear();if(!mes)mes=MESES[d.getUTCMonth()];if(!sem)sem=isoWeek(d);}}
+    if(mes&&/^[0-9]+$/.test(mes)){const mi=+mes-1;if(mi>=0&&mi<12)mes=MESES[mi];}
+    if(anio==null&&!mes)continue;
+    const suc=ci.suc>=0?norm(r[ci.suc]):'';
+    let sup=ci.sup>=0?norm(r[ci.sup]):(revSup?(revSup[hkey(suc)]||''):'');
+    if(anio)anios.add(anio);
+    rows.push({sp:ci.sp>=0?canonSp(r[ci.sp]):'',suc,ven:ci.ven>=0?norm(r[ci.ven]):'',fb:ci.fb>=0?(+r[ci.fb]||0):0,mes,sem,tipo:ci.tipo>=0?norm(r[ci.tipo]):'',anio,sup,zona:ci.zona>=0?norm(r[ci.zona]):'',prod:ci.prod>=0?norm(r[ci.prod]):'',est:ci.est>=0?norm(r[ci.est]):'',dia:ci.dia>=0?(parseInt(r[ci.dia])||0):0});
+  }
+  return {rows,anios:[...anios].sort((a,b)=>a-b)};
+}
+/* Worker: mismas funciones, otro hilo (para no congelar con archivos grandes) */
+const WORKER_BODY=`
+importScripts('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+const MESES=${JSON.stringify(MESES)};
+const SP_ALIAS=${JSON.stringify(SP_ALIAS)};
+const norm=${norm.toString()};
+const deacc=${deacc.toString()};
+const hkey=${hkey.toString()};
+const canonSp=${canonSp.toString()};
+const serialToDate=${serialToDate.toString()};
+const isoWeek=${isoWeek.toString()};
+const loadSheetRows=${loadSheetRows.toString()};
+const colIdx=${colIdx.toString()};
+const buildRows=${buildRows.toString()};
+onmessage=function(e){try{
+  const wb=XLSX.read(new Uint8Array(e.data.buf),{type:'array',dense:true,cellDates:false,cellNF:false,cellText:false,cellStyles:false,cellFormula:false});
+  const res=loadSheetRows(wb);
+  if(!res){postMessage({error:'no-sheet',sheets:wb.SheetNames});return;}
+  const ci=colIdx(res.header);
+  const out=buildRows(res.aoa,res.hr,ci,e.data.sucsup);
+  const ciNames={};for(const k in ci)ciNames[k]=ci[k]>=0?res.header[ci[k]]:null;
+  postMessage({rows:out.rows,anios:out.anios,ciNames:ciNames,sheet:res.sheet,hr:res.hr});
+}catch(err){postMessage({error:String((err&&err.message)||err)});}};
+`;
+
+/* ---- Core filtering & aggregation ---- */
+function F(){return {sup:$('#fSup').value,anio:+$('#fAnio').value,mes:$('#fMes').value,dh:+$('#fDH').value||21,dt:+$('#fDT').value||1,sponsor:STATE.fSponsor||'__ALL__',zona:STATE.fZona||'__ALL__'};}
+function filt(f,{anio,mes,sup}={}){
+  anio=anio??f.anio;mes=mes??f.mes;sup=sup??f.sup;
+  const spF=f.sponsor&&f.sponsor!=='__ALL__'?f.sponsor:null;
+  const zoF=f.zona&&f.zona!=='__ALL__'?f.zona:null;
+  const scF=STATE.fSuc&&STATE.fSuc!=='__ALL__'?STATE.fSuc:null;
+  const out=[];const rows=STATE.rows;
+  for(let i=0;i<rows.length;i++){const r=rows[i];
+    if(r.anio!==anio)continue;
+    if(mes&&r.mes!==mes)continue;
+    if(sup!=='__ALL__'&&r.sup!==sup)continue;
+    if(spF&&r.sp!==spF)continue;
+    if(zoF&&r.zona!==zoF)continue;
+    if(scF&&r.suc!==scF)continue;
+    out.push(r);
+  }
+  return out;
+}
+// meta lookup (valores forzados a número)
+function metaSponsor(f){
+  const ov=STATE.metaOv[metaKey(f)]; if(ov&&ov.bySp)return ov.bySp;
+  const M={};const all=f.sup==='__ALL__';
+  if(all){
+    REF.fc_sponsor.forEach(([mes,sp,vt,fb])=>{if(norm(mes).toLowerCase()===f.mes){M[sp.toUpperCase()]={vt:+vt||0,fb:+fb||0}}});
+  }else{
+    REF.meta_sponsor.forEach(([sup,mes,anio,sp,vt,fb])=>{
+      if(sup===f.sup&&norm(mes).toLowerCase()===f.mes&&+anio===f.anio){M[sp.toUpperCase()]={vt:+vt||0,fb:+fb||0}}});
+  }
+  return M;
+}
+function metaTipo(f){
+  const ov=STATE.metaOv[metaKey(f)]; if(ov&&ov.byTipo)return ov.byTipo;
+  const M={};const all=f.sup==='__ALL__';
+  if(all){REF.fc_tipo.forEach(([mes,tp,vt,fb])=>{if(norm(mes).toLowerCase()===f.mes)M[tp]={vt:+vt||0,fb:+fb||0}});}
+  else{REF.meta_tipo.forEach(([sup,mes,anio,tp,vt,fb])=>{if(sup===f.sup&&norm(mes).toLowerCase()===f.mes&&+anio===f.anio)M[tp]={vt:+vt||0,fb:+fb||0}});}
+  return M;
+}
+// meta total respetando filtro de sponsor
+function metaTot(f){const mS=metaSponsor(f);let vt=0,fb=0;const spF=f.sponsor&&f.sponsor!=='__ALL__'?f.sponsor.toUpperCase():null;
+  Object.keys(mS).forEach(sp=>{if(spF&&sp!==spF)return;vt+=+mS[sp].vt||0;fb+=+mS[sp].fb||0;});return{vt,fb,mS};}
+function homologadas(f){
+  if(f.sup==='__ALL__'){let n=0;Object.values(REF.sucsup).forEach(a=>n+=a.length);return n;}
+  return (REF.sucsup[f.sup]||[]).length;
+}
+function proy(v,f){return f.dt>0?v/f.dt*f.dh:0;}
+function groupSum(rows,key){const m={};for(const r of rows){const k=r[key]||'—';if(!m[k])m[k]={vt:0,fb:0};m[k].vt++;m[k].fb+=r.fb;}return m;}
+
+/* ---- Render dispatch ---- */
+/* ---- Filtros visibles por vista (como el Excel) ---- */
+function setSup(v){$('#fSup').value=v;if(STATE.ready)render();}
+function setAnioF(v){$('#fAnio').value=v;autoDH_DT();if(STATE.ready)render();}
+function setMesF(v){$('#fMes').value=v;autoDH_DT();if(STATE.ready)render();}
+function setDHF(v){$('#fDH').value=v;if(STATE.ready)render();}
+function setDTF(v){$('#fDT').value=v;if(STATE.ready)render();}
+function setSpF(v){STATE.fSponsor=v;render();}
+function setZoF(v){STATE.fZona=v;render();}
+function setSucFil(v){STATE.fSuc=v;render();}
+const FB_WHICH={resumen:['sup','anio','mes','dh','dt','sponsor','zona','cmp'],alertas:['sup','anio','mes','dh','dt','sponsor','zona','cmp'],sponsors:['sup','anio','mes','dh','dt','sponsor','zona','cmp'],scorecard:['sup','anio','mes','dh','dt','sponsor','zona','cmp'],sucursales:['sup','anio','mes','sponsor','zona','cmp'],comparativo:['sup','anio','mes','sponsor','zona'],ranking:['sup','anio','mes','sponsor','zona','suc','cmp'],semanal:['sup','anio','mes','dh','dt','sponsor','zona','cmp'],comparador:['sup','sponsor'],bitacora:['sup']};
+function filterBar(f,which){
+  which=which||['sup','anio','mes','dh','dt','sponsor','zona'];
+  const sups=[{v:'__ALL__',l:'Todos (Líder)'}].concat(((STATE.diag&&STATE.diag.sups)||[]).map(s=>({v:s,l:s})));
+  const spList=['__ALL__'].concat([...new Set(STATE.rows.map(r=>r.sp).filter(Boolean))].sort((a,b)=>{const ia=SP_ORDER.indexOf(a),ib=SP_ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b);}));
+  const zoList=['__ALL__'].concat([...new Set(STATE.rows.map(r=>r.zona).filter(z=>z&&!/^CERRAD/i.test(z)))].sort());
+  const cell=(lbl,ctrl)=>`<div class="fgrp" style="flex-direction:column;align-items:flex-start;gap:4px"><label>${lbl}</label>${ctrl}</div>`;
+  const P=[];
+  if(which.includes('sup'))P.push(cell('Supervisor',`<select class="ctrl" onchange="setSup(this.value)">${sups.map(o=>`<option value="${o.v}" ${f.sup===o.v?'selected':''}>${o.l}</option>`).join('')}</select>`));
+  if(which.includes('anio'))P.push(cell('Año',`<select class="ctrl" onchange="setAnioF(this.value)">${STATE.anios.map(a=>`<option ${f.anio===a?'selected':''}>${a}</option>`).join('')}</select>`));
+  if(which.includes('mes'))P.push(cell('Mes',`<select class="ctrl" onchange="setMesF(this.value)">${MESES.map(m=>`<option value="${m}" ${f.mes===m?'selected':''}>${cap(m)}</option>`).join('')}</select>`));
+  if(which.includes('dh'))P.push(cell('Días hábiles',`<input class="ctrl winput num" type="number" min="1" value="${f.dh}" onchange="setDHF(this.value)">`));
+  if(which.includes('dt'))P.push(cell('Días transc.',`<input class="ctrl winput num" type="number" min="0" value="${f.dt}" onchange="setDTF(this.value)">`));
+  if(which.includes('sponsor'))P.push(cell('Sponsor',`<select class="ctrl" onchange="setSpF(this.value)">${spList.map(s=>`<option value="${s}" ${f.sponsor===s?'selected':''}>${s==='__ALL__'?'Todos':s}</option>`).join('')}</select>`));
+  if(which.includes('zona')&&zoList.length>1)P.push(cell('Zona',`<select class="ctrl" onchange="setZoF(this.value)">${zoList.map(z=>`<option value="${z}" ${f.zona===z?'selected':''}>${z==='__ALL__'?'Todas':z}</option>`).join('')}</select>`));
+  if(which.includes('suc')){const scList=['__ALL__'].concat([...new Set(STATE.rows.filter(r=>f.sup==='__ALL__'||r.sup===f.sup).map(r=>r.suc).filter(s=>s&&!/cerrad/i.test(s)))].sort());
+    P.push(cell('Sucursal',`<select class="ctrl" style="min-width:170px" onchange="setSucFil(this.value)">${scList.map(s=>`<option value="${escAttr(s)}" ${STATE.fSuc===s?'selected':''}>${s==='__ALL__'?'Todas':s}</option>`).join('')}</select>`));}
+  if(which.includes('cmp')){const cm=STATE.cmpMode||'prev';const cp=cmpPeriod(f);
+    P.push(cell('Comparar contra',`<select class="ctrl" onchange="setCmpMode(this.value)"><option value="prev" ${cm==='prev'?'selected':''}>Mes anterior</option><option value="year" ${cm==='year'?'selected':''}>Año anterior</option><option value="custom" ${cm==='custom'?'selected':''}>Personalizado…</option></select>`));
+    if(cm==='custom'){
+      P.push(cell('Año comp.',`<select class="ctrl" onchange="setCmpAnioG(this.value)">${STATE.anios.map(a=>`<option ${cp.anio===a?'selected':''}>${a}</option>`).join('')}</select>`));
+      P.push(cell('Mes comp.',`<select class="ctrl" onchange="setCmpMesG(this.value)">${MESES.map(m=>`<option value="${m}" ${cp.mes===m?'selected':''}>${cap(m)}</option>`).join('')}</select>`));
+    }
+  }
+  return `<div class="panel" style="border-top:3px solid var(--accent)"><div class="pb" style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end"><div style="font-family:Fraunces,serif;font-weight:600;font-size:15px;color:var(--wine);align-self:center;margin-right:6px">Filtros</div>${P.join('')}</div></div>`;
+}
+
+function render(){
+  const f=F();
+  updateMetaBtn();
+  $('#vtitle').textContent=NAV.find(n=>n[0]==STATE.view)[1];
+  $('#brandsub').textContent=(f.sup==='__ALL__'?'Líder':f.sup)+' · '+cap(f.mes)+' '+f.anio;
+  try{
+    const V={resumen:vResumen,alertas:vAlertas,sponsors:vSponsors,scorecard:vScorecard,sucursales:vSucursales,comparativo:vComparativo,comparador:vComparador,ranking:vRanking,semanal:vSemanal,bitacora:vBitacora}[STATE.view];
+    destroyCharts();
+    const n=filt(f).length;
+    const dbg=debugBar(f,n);
+    if(n===0){$('#content').innerHTML=dbg+noData(f);return;}
+    const fbar=FB_WHICH[STATE.view]?filterBar(f,FB_WHICH[STATE.view]):'';
+    $('#content').innerHTML=dbg+fbar+diagBanner(f)+V(f);
+    (afterRender[STATE.view]||[]).forEach(fn=>fn(f));
+    afterRender.__q=[];
+  }catch(e){
+    console.error(e);
+    $('#content').innerHTML=`<div class="verdict bad"><b>Ocurrió un error al procesar.</b><span>${(e&&e.message)||e}<br><small style="opacity:.7">Contame qué dice este mensaje y lo corrijo.</small></span></div>`;
+  }
+}
+function debugBar(f,n){
+  const d=STATE.diag||{};
+  return `<div id="dbg" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--mute);background:#EEF0EB;border:1px solid var(--line);border-radius:9px;padding:8px 12px;margin-bottom:14px">
+    <b style="color:var(--text)">Diagnóstico</b>
+    ${STATE.sheetInfo?`<span>Hoja: <b style="color:var(--text)">${STATE.sheetInfo.sheet}</b>${STATE.sheetInfo.headerRow>0?' (encab. fila '+(STATE.sheetInfo.headerRow+1)+')':''}</span>`:''}
+    <span>Registros leídos: <b class="num" style="color:var(--text)">${fmt(d.n||0)}</b></span>
+    <span>Mostrando ahora: <b class="num" style="color:${n?'var(--pos)':'var(--neg)'}">${fmt(n)}</b> pólizas</span>
+    <span>Años: <b>${(d.anios&&d.anios.length)?d.anios.join(', '):'ninguno'}</b></span>
+    <span>Supervisores: <b>${(d.sups&&d.sups.length)?d.sups.length:'0'}</b></span>
+    <span style="margin-left:auto;color:${(STATE.cm&&STATE.cm.sp&&(STATE.cm.anio||STATE.cm.fec)&&(STATE.cm.mes||STATE.cm.fec))?'var(--pos)':'var(--neg)'}">Columnas: sp:${col(STATE.cm,'sp')} año:${col(STATE.cm,'anio')||col(STATE.cm,'fec')+'*'} mes:${col(STATE.cm,'mes')||col(STATE.cm,'fec')+'*'} sup:${col(STATE.cm,'sup')}</span>
+    <button onclick="document.getElementById('dbg').style.display='none'" style="border:0;background:transparent;color:var(--mute);cursor:pointer">ocultar ✕</button>
+  </div>`;
+}
+function col(cm,k){return (cm&&cm[k])?'✓':'✗';}
+const afterRender={__q:[]};
+function onDraw(view,fn){(afterRender[view]=afterRender[view]||[]).push(fn);}
+function destroyCharts(){Object.values(STATE.charts).forEach(c=>{try{c.destroy()}catch(e){}});STATE.charts={};}
+function mkChart(id,cfg){requestAnimationFrame(()=>{const el=$('#'+id);if(el)STATE.charts[id]=new Chart(el,cfg)});}
+Chart.defaults.font.family="Inter,system-ui,sans-serif";Chart.defaults.font.size=11.5;Chart.defaults.color="#6E7A7C";
+
+/* util renderers */
+function kpi(lab,val,sub,tag){return `<div class="kpi"><div class="lab">${lab}</div><div class="val num">${val}</div>${sub?`<div class="sub">${sub}</div>`:''}${tag?`<div class="tag ${tag.c}">${tag.t}</div>`:''}<div class="bar" style="width:${tag&&tag.w!=null?tag.w:0}%"></div></div>`}
+function arrowSpan(d){if(d>0.0001)return `<span class="pos">▲ ${pct(d)}</span>`;if(d<-0.0001)return `<span class="neg">▼ ${pct(Math.abs(d))}</span>`;return `<span class="flat">▬ 0%</span>`}
+function deltaSpan(d){if(d>0)return `<span class="pos">+${fmt(d)} ▲</span>`;if(d<0)return `<span class="neg">${fmt(d)} ▼</span>`;return `<span class="flat">0 ▬</span>`}
+function sortedSponsors(obj){return Object.keys(obj).sort((a,b)=>{const ia=SP_ORDER.indexOf(a.toUpperCase()),ib=SP_ORDER.indexOf(b.toUpperCase());return (ia<0?99:ia)-(ib<0?99:ib)||obj[b].vt-obj[a].vt});}
+
+/* =================== VIEWS =================== */
+
+/* ---------- RESUMEN ---------- */
+function vResumen(f){
+  const rows=filt(f);
+  const vt=rows.length, fb=rows.reduce((s,r)=>s+r.fb,0);
+  const MT=metaTot(f); const mS=MT.mS; const metaVT=MT.vt, metaFB=MT.fb;
+  const cum=metaVT?vt/metaVT:0, pv=proy(vt,f), pcum=metaVT?pv/metaVT:0;
+  const falta=Math.max(0,metaVT-vt), necDia=(f.dh-f.dt)>0?falta/(f.dh-f.dt):0;
+  // activas
+  const sucSet=new Set(rows.filter(r=>r.suc&&!/cerrad/i.test(r.suc)).map(r=>r.suc));
+  const homo=homologadas(f); const activas=sucSet.size; const act=homo?activas/homo:0;
+  const ejec=new Set(rows.filter(r=>r.ven&&!/cerrad/i.test(r.ven)).map(r=>r.ven)).size;
+  const pm=cmpPeriod(f); const rowsPrev=filt(f,{anio:pm.anio,mes:pm.mes});
+  const dPrev=rowsPrev.length?(vt-rowsPrev.length)/rowsPrev.length:null;
+  const rowsYA=filt(f,{anio:f.anio-1}); const dYA=rowsYA.length?(vt-rowsYA.length)/rowsYA.length:null;
+
+  const bySp=groupSum(rows,'sp'); const sps=sortedSponsors(bySp);
+  const byTipo=groupSum(rows,'tipo'); const mT=metaTipo(f);
+
+  let ritmo=sps.map(sp=>{const m=mS[sp.toUpperCase()]||{vt:0,fb:0};const log=bySp[sp].vt;const p=proy(log,f);
+    const fa=Math.max(0,(+m.vt||0)-log);const nec=(f.dh-f.dt)>0?fa/(f.dh-f.dt):0;
+    return {sp,meta:+m.vt||0,mfb:+m.fb||0,log,fbv:bySp[sp].fb,cum:m.vt?log/(+m.vt):0,proy:p,falta:fa,nec};});
+  const tot={meta:metaVT,log:vt,proy:pv,falta:ritmo.reduce((s,r)=>s+r.falta,0),nec:ritmo.reduce((s,r)=>s+r.nec,0)};
+
+  onDraw('resumen',()=>{
+    mkChart('cRitmo',{type:'bar',data:{labels:ritmo.map(r=>r.sp),datasets:[
+      {label:'Logrado',data:ritmo.map(r=>r.log),backgroundColor:ritmo.map(r=>spcol(r.sp)),borderRadius:5,barPercentage:.62},
+      {label:'Meta',data:ritmo.map(r=>r.meta),backgroundColor:'#E4E0D6',borderRadius:5,barPercentage:.62}
+    ]},options:{plugins:{legend:{display:true,position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'#EFECE4'},beginAtZero:true}},maintainAspectRatio:false}});
+    const tl=['Recurrente','Única','Asistencia'];
+    mkChart('cTipo',{type:'doughnut',data:{labels:tl,datasets:[{data:tl.map(t=>byTipo[t]?byTipo[t].vt:0),backgroundColor:['#1F6F6B','#B7862B','#8A929A'],borderWidth:2,borderColor:'#fff'}]},
+      options:{cutout:'62%',plugins:{legend:{position:'bottom'}},maintainAspectRatio:false}});
+  });
+
+  return `
+  <div class="panel" style="border-left:3px solid var(--accent)"><div class="ph"><h3>🔎 Lectura rápida</h3><span class="note">diagnóstico automático · ver más en Alertas</span></div>
+    <div class="pb"><ul style="margin:0;padding-left:18px;line-height:1.85">${genInsights(f).map(s=>`<li>${s}</li>`).join('')}</ul></div></div>
+
+  <div class="grid kpis">
+    ${kpi('Colocación vs meta',fmt(vt)+' <span style="font-size:16px;color:var(--mute)">/ '+fmt(metaVT)+'</span>','Cumplimiento '+pct(cum,1)+' · faltan '+fmt(falta),{c:cum>=.5?'up':cum>=.3?'fl':'dn',t:pct(cum,0),w:Math.min(100,cum*100)})}
+    ${kpi('Facturación vs meta','$'+fmt(fb),'Meta $'+fmt(metaFB)+' · '+(metaFB?pct(fb/metaFB,1):'—'),{c:metaFB&&fb/metaFB>=.5?'up':'dn',t:metaFB?pct(fb/metaFB,0):'—',w:metaFB?Math.min(100,fb/metaFB*100):0})}
+    ${kpi('Proyección cierre',fmt(Math.round(pv)),'meta '+fmt(metaVT)+' · '+pct(pcum,0)+' · nec. '+fmt(necDia,1)+'/día',{c:pcum>=1?'up':pcum>=.8?'fl':'dn',t:pct(pcum,0),w:Math.min(100,pcum*100)})}
+    ${kpi('Sucursales activas',fmt(activas),'de '+fmt(homo)+' homologadas · '+pct(act,0),{c:act>=.6?'up':'fl',t:pct(act,0),w:act*100})}
+    ${kpi('Ejecutivos activos',fmt(ejec),'colocaron ≥1 póliza',null)}
+    ${kpi('Vs año anterior',dYA==null?'—':(dYA>0?'+':'')+pct(dYA,1),cap(f.mes)+' '+(f.anio-1)+' · '+fmt(rowsYA.length),dYA==null?null:{c:dYA>0?'up':'dn',t:dYA>0?'▲ SÍ':'▼ NO',w:50})}
+  </div>
+
+  <div class="three">
+    <div class="panel">
+      <div class="ph"><h3>Ritmo por sponsor</h3><span class="note">meta vs logrado</span></div>
+      <div class="pb"><div class="chartbox">${cv('cRitmo')}</div></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><h3>Mezcla por tipo</h3></div>
+      <div class="pb"><div class="chartbox">${cv('cTipo')}</div>
+        <div class="legend">${['Recurrente','Única','Asistencia'].map(t=>{const m=mT[t]||{vt:0};const v=byTipo[t]?byTipo[t].vt:0;return `<span><span class="sdot" style="background:${{'Recurrente':'#1F6F6B','Única':'#B7862B','Asistencia':'#8A929A'}[t]}"></span>${t}: <b class="num">&nbsp;${fmt(v)}</b>&nbsp;/ ${fmt(+m.vt||0)} <span class="flat">(${m.vt?pct(v/(+m.vt),0):'—'})</span></span>`}).join('')}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h3>Detalle de ritmo — cumplimiento y necesidad diaria</h3><span class="note">FB en US$ · Nec./día = falta ÷ días hábiles restantes (${f.dh-f.dt})</span></div>
+    <div class="pb scroll-x"><table><thead><tr><th>Sponsor</th><th>Meta VT</th><th>Logrado</th><th>Cumpl.</th><th>Avance</th><th>Proy.</th><th>Falta</th><th>Nec./día</th><th>FB $</th><th>Meta FB $</th></tr></thead><tbody>
+      ${ritmo.map(r=>`<tr><td class="b"><span class="sdot" style="background:${spcol(r.sp)}"></span>${r.sp}</td><td class="num">${fmt(r.meta)}</td><td class="num b">${fmt(r.log)}</td><td class="num">${pct(r.cum,0)}</td>
+        <td style="width:100px"><span class="mini"><i style="width:${Math.min(100,r.cum*100)}%;background:${r.cum>=1?'var(--pos)':spcol(r.sp)}"></i></span></td>
+        <td class="num">${fmt(Math.round(r.proy))}</td><td class="num">${fmt(r.falta)}</td><td class="num">${r.nec?fmt(r.nec,1):'—'}</td><td class="num">$${fmt(r.fbv)}</td><td class="num" style="color:var(--mute)">$${fmt(r.mfb)}</td></tr>`).join('')}
+      <tr class="trow-tot"><td>TOTAL</td><td class="num">${fmt(tot.meta)}</td><td class="num">${fmt(tot.log)}</td><td class="num">${pct(tot.meta?tot.log/tot.meta:0,0)}</td>
+        <td><span class="mini"><i style="width:${Math.min(100,(tot.meta?tot.log/tot.meta:0)*100)}%"></i></span></td>
+        <td class="num">${fmt(Math.round(tot.proy))}</td><td class="num">${fmt(tot.falta)}</td><td class="num">${fmt(tot.nec,1)}</td><td class="num">$${fmt(fb)}</td><td class="num">$${fmt(metaFB)}</td></tr>
+    </tbody></table></div>
+  </div>`;
+}
+
+/* ---------- SPONSORS ---------- */
+function vSponsors(f){
+  const rows=filt(f); const bySp=groupSum(rows,'sp'); const sps=sortedSponsors(bySp);
+  const mS=metaSponsor(f);
+  const pm=cmpPeriod(f);
+  onDraw('sponsors',()=>{
+    mkChart('cSpCum',{type:'bar',data:{labels:sps,datasets:[{data:sps.map(s=>{const m=mS[s.toUpperCase()];return m&&m.vt?bySp[s].vt/m.vt*100:0}),backgroundColor:sps.map(s=>spcol(s)),borderRadius:5,barPercentage:.6}]},
+      options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw,0)+'% cumplimiento'}}},scales:{x:{grid:{color:'#EFECE4'},ticks:{callback:v=>v+'%'}},y:{grid:{display:false}}},maintainAspectRatio:false}});
+  });
+  // sponsor cards
+  const cards=sps.map(sp=>{
+    const m=mS[sp.toUpperCase()]||{vt:0,fb:0};const log=bySp[sp].vt;const cum=m.vt?log/m.vt:0;const p=proy(log,f);
+    const prev=filt(f,{anio:pm.anio,mes:pm.mes}).filter(r=>r.sp===sp).length;
+    const dv=prev?(log-prev)/prev:null;
+    const bySuc=groupSum(rows.filter(r=>r.sp===sp),'suc');
+    const sucs=Object.keys(bySuc).sort((a,b)=>bySuc[b].vt-bySuc[a].vt).slice(0,6);
+    return `<div class="panel"><div class="ph"><span class="sdot" style="background:${spcol(sp)};width:12px;height:12px"></span><h3>${sp}</h3>
+      <span class="badge">${fmt(log)} pól · ${pct(cum,0)} meta</span>
+      ${dv==null?'':`<span class="note">${arrowSpan(dv)} vs ${cap(pm.mes)}</span>`}</div>
+      <div class="pb">
+        <div class="grid kpis" style="margin-bottom:12px">
+          ${kpi('Logrado',fmt(log),'meta '+fmt(m.vt),{c:cum>=.5?'up':'dn',t:pct(cum,0),w:Math.min(100,cum*100)})}
+          ${kpi('Proyección',fmt(Math.round(p)),'cierre estimado',{c:m.vt&&p/m.vt>=1?'up':'fl',t:m.vt?pct(p/m.vt,0):'—',w:m.vt?Math.min(100,p/m.vt*100):0})}
+          ${kpi('FB','$'+fmt(bySp[sp].fb),'meta $'+fmt(m.fb),null)}
+        </div>
+        <table><thead><tr><th>Sucursal</th><th>Pólizas</th><th>FB</th><th>Peso</th></tr></thead><tbody>
+        ${sucs.map(s=>`<tr><td>${s}</td><td class="num b">${fmt(bySuc[s].vt)}</td><td class="num">$${fmt(bySuc[s].fb)}</td><td style="width:90px"><span class="mini"><i style="width:${log?bySuc[s].vt/bySuc[sucs[0]].vt*100:0}%;background:${spcol(sp)}"></i></span></td></tr>`).join('')}
+        </tbody></table>
+      </div></div>`;
+  }).join('');
+  return `<div class="panel"><div class="ph"><h3>Cumplimiento de meta por sponsor</h3><span class="note">${cap(f.mes)} ${f.anio} · logrado ÷ meta</span></div>
+    <div class="pb"><div class="chartbox">${cv('cSpCum')}</div></div></div>${cards}`;
+}
+
+/* ---------- SUCURSALES ---------- */
+function officeDetail(f,rows){
+  const cnt={};rows.forEach(r=>{if(r.suc&&!/cerrad/i.test(r.suc))cnt[r.suc]=(cnt[r.suc]||0)+1;});
+  const offices=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]);
+  if(!offices.length)return '<p class="hint">No hay oficinas con colocación en este filtro.</p>';
+  if(!STATE.sucSel||!offices.includes(STATE.sucSel))STATE.sucSel=offices[0];
+  const sel=STATE.sucSel;
+  const oRows=rows.filter(r=>r.suc===sel);
+  const sp=STATE.sucSp&&STATE.sucSp[sel];
+  const weeks=[...new Set(oRows.filter(r=>r.sem>0).map(r=>r.sem))].sort((a,b)=>a-b);
+  // asesores
+  const byV={};oRows.forEach(r=>{if(!r.ven||/cerrad/i.test(r.ven))return;const k=r.ven;(byV[k]=byV[k]||{vt:0,fb:0,prod:{},w:{},rec:0,uni:0,asi:0});byV[k].vt++;byV[k].fb+=r.fb;byV[k].prod[r.prod||'—']=(byV[k].prod[r.prod||'—']||0)+1;byV[k].w[r.sem]=(byV[k].w[r.sem]||0)+1;const t=(r.tipo||'').toLowerCase();if(t.includes('recurr'))byV[k].rec++;else if(t.includes('nica')||t==='unica')byV[k].uni++;else if(t.includes('asist'))byV[k].asi++;});
+  const ase=Object.entries(byV).map(([ven,o])=>({ven,...o,top:Object.keys(o.prod).sort((a,b)=>o.prod[b]-o.prod[a])[0]})).sort((a,b)=>b.vt-a.vt);
+  // comparación por asesor
+  const cp=cmpPeriod(f);const prevV={};filt(f,{anio:cp.anio,mes:cp.mes}).filter(r=>r.suc===sel).forEach(r=>{if(r.ven)prevV[r.ven]=(prevV[r.ven]||0)+1;});
+  // productos
+  const byP={};oRows.forEach(r=>{const k=r.prod||'—';(byP[k]=byP[k]||{vt:0,fb:0});byP[k].vt++;byP[k].fb+=r.fb;});
+  const prods=Object.entries(byP).map(([p,o])=>({p,...o})).sort((a,b)=>b.vt-a.vt);
+  const maxP=prods.length?prods[0].vt:1;
+  const vt=oRows.length,fb=oRows.reduce((s,r)=>s+r.fb,0);const pvv=proy(vt,f);
+  const maxA=ase.length?ase[0].vt:1;
+
+  const opts=offices.map(o=>`<option ${o===sel?'selected':''}>${o}</option>`).join('');
+  return `
+  <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px">
+    <div class="fgrp" style="flex-direction:column;align-items:flex-start;gap:4px"><label>Oficina</label><select class="ctrl" style="min-width:280px" onchange="setSucSel(this.value)">${opts}</select></div>
+    <div class="pill" style="align-self:center">${sp?`<span class="sdot" style="background:${spcol(sp)}"></span>${sp}`:''}</div>
+  </div>
+  <div class="grid kpis" style="margin-bottom:14px">
+    ${kpi('Pólizas',fmt(vt),cap(f.mes)+' '+f.anio,null)}
+    ${kpi('Facturación US$','$'+fmt(fb),'',null)}
+    ${kpi('Asesores activos',fmt(ase.length),'colocaron ≥1',null)}
+    ${kpi('Productos distintos',fmt(prods.length),'colocados',null)}
+    ${kpi('Proyección cierre',fmt(Math.round(pvv)),'ritmo actual',null)}
+  </div>
+  <div class="panel" style="box-shadow:none;border:1px solid var(--line)"><div class="ph"><h3>Asesores — ritmo y mezcla</h3><span class="note">vs ${cap3(cp.mes)} ${cp.anio}</span></div>
+      <div class="pb twrap"><table><thead><tr><th>Asesor</th><th>Pól.</th><th>Rec</th><th>Únic</th><th>Asis</th><th>Top producto</th><th>vs comp.</th><th>FB $</th>${weeks.map(w=>`<th>S${w}</th>`).join('')}</tr></thead><tbody>
+        ${ase.map(a=>{const d=prevV[a.ven]?(a.vt-prevV[a.ven])/prevV[a.ven]:null;return `<tr><td class="b">${a.ven}</td><td class="num b">${fmt(a.vt)}</td><td class="num">${a.rec||'·'}</td><td class="num">${a.uni||'·'}</td><td class="num">${a.asi||'·'}</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;color:var(--mute)">${a.top||'—'}</td><td class="num">${d==null?'—':arrowSpan(d)}</td><td class="num">$${fmt(a.fb)}</td>${weeks.map(w=>`<td class="num">${a.w[w]||'·'}</td>`).join('')}</tr>`}).join('')}
+        <tr class="trow-tot"><td>TOTAL</td><td class="num">${fmt(vt)}</td><td class="num">${ase.reduce((s,a)=>s+a.rec,0)}</td><td class="num">${ase.reduce((s,a)=>s+a.uni,0)}</td><td class="num">${ase.reduce((s,a)=>s+a.asi,0)}</td><td></td><td></td><td class="num">$${fmt(fb)}</td>${weeks.map(w=>`<td class="num">${oRows.filter(r=>r.sem===w).length}</td>`).join('')}</tr>
+      </tbody></table></div></div>
+  <div class="panel" style="box-shadow:none;border:1px solid var(--line)"><div class="ph"><h3>Productos que coloca</h3><span class="note">qué se vende en la oficina</span></div>
+      <div class="pb twrap"><table><thead><tr><th>Producto</th><th>Pól.</th><th>FB $</th><th>Peso</th></tr></thead><tbody>
+        ${prods.map(pr=>`<tr><td>${pr.p}</td><td class="num b">${fmt(pr.vt)}</td><td class="num">$${fmt(pr.fb)}</td><td style="width:160px"><span class="mini"><i style="width:${pr.vt/maxP*100}%;background:${sp?spcol(sp):'#1F6F6B'}"></i></span></td></tr>`).join('')}
+      </tbody></table></div></div>`;
+}
+function vSucursales(f){
+  const rows=filt(f);const pm=cmpPeriod(f);const rowsP=filt(f,{anio:pm.anio,mes:pm.mes});
+  const homo=homologadas(f);
+  const cur=groupSum(rows.filter(r=>r.suc&&!/cerrad/i.test(r.suc)),'suc');
+  const prev=groupSum(rowsP.filter(r=>r.suc&&!/cerrad/i.test(r.suc)),'suc');
+  const activas=Object.keys(cur).length;const act=homo?activas/homo:0;
+  const vt=rows.length;
+  // cobertura por sponsor: sucursales activas + ejecutivos activos, cur vs prev
+  const spKeys=sortedSponsors(groupSum(rows,'sp'));
+  function activeBySp(rws,key){const m={};for(const r of rws){if(!r[key]||/cerrad/i.test(r[key]))continue;(m[r.sp]=m[r.sp]||new Set()).add(r[key]);}return m;}
+  const sucCur=activeBySp(rows,'suc'),sucPrev=activeBySp(rowsP,'suc'),ejCur=activeBySp(rows,'ven'),ejPrev=activeBySp(rowsP,'ven');
+  const cob=spKeys.map(sp=>({sp,sj:(sucPrev[sp]||new Set()).size,sa:(sucCur[sp]||new Set()).size,ej:(ejPrev[sp]||new Set()).size,ea:(ejCur[sp]||new Set()).size}));
+  const cobTot={sj:sum(cob,'sj'),sa:sum(cob,'sa'),ej:sum(cob,'ej'),ea:sum(cob,'ea')};
+  // caída por sucursal (todas), ordenada por mayor retroceso
+  const allSuc=[...new Set([...Object.keys(cur),...Object.keys(prev)])];
+  const caida=allSuc.map(s=>({s,j:prev[s]?prev[s].vt:0,a:cur[s]?cur[s].vt:0})).map(o=>({...o,d:o.a-o.j}))
+    .filter(o=>o.j||o.a).sort((x,y)=>x.d-y.d);
+  const drops=caida.filter(o=>o.d<0).slice(0,14);
+  const ups=caida.filter(o=>o.d>0).sort((x,y)=>y.d-x.d).slice(0,8);
+  const zeros=caida.filter(o=>o.j>0&&o.a===0);
+
+  onDraw('sucursales',()=>{
+    mkChart('cCob',{type:'bar',data:{labels:cob.map(c=>c.sp),datasets:[
+      {label:'Sucursales activas',data:cob.map(c=>c.sa),backgroundColor:'#1F6F6B',borderRadius:4,barPercentage:.7},
+      {label:'Ejecutivos activos',data:cob.map(c=>c.ea),backgroundColor:'#B7862B',borderRadius:4,barPercentage:.7}
+    ]},options:{plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'#EFECE4'},beginAtZero:true}},maintainAspectRatio:false}});
+  });
+
+  // universo para "en cero / no aparecen": histórico (mes ant. ∪ año ant.) ∪ homologadas del supervisor
+  const curHK=new Set(Object.keys(cur).map(hkey));
+  const yrAgo=groupSum(filt(f,{anio:f.anio-1}).filter(r=>r.suc&&!/cerrad/i.test(r.suc)),'suc');
+  const uni={};
+  Object.keys(prev).forEach(s=>{const k=hkey(s);if(!uni[k])uni[k]={name:s,j:0,y:0};uni[k].j=prev[s].vt;});
+  Object.keys(yrAgo).forEach(s=>{const k=hkey(s);if(!uni[k])uni[k]={name:s,j:0,y:0};uni[k].y=yrAgo[s].vt;});
+  const roster=f.sup==='__ALL__'?[].concat(...Object.values(REF.sucsup)):(REF.sucsup[f.sup]||[]);
+  roster.forEach(s=>{const k=hkey(s);if(!uni[k])uni[k]={name:s,j:0,y:0,homol:true};else uni[k].homol=true;});
+  const zeroList=Object.values(uni).filter(o=>!curHK.has(hkey(o.name))).sort((a,b)=>(b.j+b.y)-(a.j+a.y));
+
+  const caidaList=caida.filter(o=>o.d<0);
+  const crecenList=caida.filter(o=>o.d>0).sort((x,y)=>y.d-x.d);
+  const caidaTbl=`<table><thead><tr><th>Sucursal</th><th>Sponsor</th><th>${cap3(pm.mes)}</th><th>${cap3(f.mes)}</th><th>Δ</th></tr></thead><tbody>
+      ${caidaList.length?caidaList.map(o=>`<tr><td>${o.s}${o.a===0?' <span class="badge" style="background:#F6E9E7;color:var(--neg)">en cero</span>':''}</td>${sucSpCell(o.s)}<td class="num">${fmt(o.j)}</td><td class="num b">${fmt(o.a)}</td><td class="num neg">${fmt(o.d)}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--mute)">Sin caídas.</td></tr>'}</tbody></table>`;
+  const crecenTbl=`<table><thead><tr><th>Sucursal</th><th>Sponsor</th><th>${cap3(pm.mes)}</th><th>${cap3(f.mes)}</th><th>Δ</th></tr></thead><tbody>
+      ${crecenList.length?crecenList.map(o=>`<tr><td>${o.s}${o.j===0?' <span class="badge" style="background:#E7F1EB;color:var(--pos)">nueva</span>':''}</td>${sucSpCell(o.s)}<td class="num">${fmt(o.j)}</td><td class="num b">${fmt(o.a)}</td><td class="num pos">+${fmt(o.d)}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--mute)">—</td></tr>'}</tbody></table>`;
+  const ceroTbl=`<table><thead><tr><th>Sucursal</th><th>Sponsor</th><th>${cap3(pm.mes)}</th><th>${cap3(f.mes)} ${f.anio-1}</th><th>Actual</th><th></th></tr></thead><tbody>
+      ${zeroList.length?zeroList.map(o=>`<tr><td>${o.name}</td>${sucSpCell(o.name)}<td class="num">${o.j?fmt(o.j):'·'}</td><td class="num">${o.y?fmt(o.y):'·'}</td><td class="num neg b">0</td><td>${o.j===0&&o.y===0?'<span class="badge">homologada</span>':'<span class="badge" style="background:#F6E9E7;color:var(--neg)">dejó de vender</span>'}</td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--mute)">Todas las homologadas con historial están activas.</td></tr>'}</tbody></table>`;
+
+  return `
+  <div class="grid kpis">
+    ${kpi('Sucursales activas',fmt(activas),'de '+fmt(homo)+' homologadas',{c:act>=.6?'up':'fl',t:pct(act,0),w:act*100})}
+    ${kpi('% Activación',pct(act,1),'cobertura de red',{c:act>=.7?'up':act>=.5?'fl':'dn',t:'',w:act*100})}
+    ${kpi('Venta / sucursal activa',fmt(activas?vt/activas:0,1),'promedio del mes',null)}
+    ${kpi('Sin colocación',fmt(zeroList.length),'en cero o no aparecen',{c:zeroList.length?'dn':'up',t:zeroList.length?'▼':'✓',w:0})}
+  </div>
+
+  <div class="panel"><div class="ph"><h3>Cobertura operativa por sponsor</h3><span class="note">${cap(pm.mes)} → ${cap(f.mes)} · con ≥1 venta</span></div>
+    <div class="pb"><div class="chartbox sm">${cv('cCob')}</div>
+      <div class="scroll-x" style="margin-top:10px"><table><thead><tr><th>Sponsor</th><th>Suc. ${cap3(pm.mes)}</th><th>Suc. ${cap3(f.mes)}</th><th>Δ</th><th>Ejec. ${cap3(pm.mes)}</th><th>Ejec. ${cap3(f.mes)}</th><th>Δ</th></tr></thead><tbody>
+      ${cob.map(c=>`<tr><td class="b"><span class="sdot" style="background:${spcol(c.sp)}"></span>${c.sp}</td><td class="num">${c.sj}</td><td class="num b">${c.sa}</td><td class="num">${deltaSpan(c.sa-c.sj)}</td><td class="num">${c.ej}</td><td class="num b">${c.ea}</td><td class="num">${deltaSpan(c.ea-c.ej)}</td></tr>`).join('')}
+      <tr class="trow-tot"><td>TOTAL</td><td class="num">${cobTot.sj}</td><td class="num">${cobTot.sa}</td><td class="num">${deltaSpan(cobTot.sa-cobTot.sj)}</td><td class="num">${cobTot.ej}</td><td class="num">${cobTot.ea}</td><td class="num">${deltaSpan(cobTot.ea-cobTot.ej)}</td></tr>
+      </tbody></table></div>
+    </div></div>
+
+  <div class="panel"><div class="ph"><h3>Sucursales en caída</h3><span class="note">${caidaList.length} · vs ${cap(pm.mes)}</span></div><div class="pb twrap">${caidaTbl}</div></div>
+  <div class="panel"><div class="ph"><h3>Sucursales que crecen</h3><span class="note">${crecenList.length} · vs ${cap(pm.mes)}</span></div><div class="pb twrap">${crecenTbl}</div></div>
+  <div class="panel"><div class="ph"><h3>Sucursales en cero / no aparecen</h3><span class="note">${zeroList.length} · con historial reciente</span></div><div class="pb twrap">${ceroTbl}</div></div>
+  <div class="panel" style="border-top:3px solid var(--gold)"><div class="ph"><h3>Detalle por oficina</h3><span class="note">cómo trabaja: asesores, productos y ritmo</span></div>
+    <div class="pb">${officeDetail(f,rows)}</div></div>`;
+}
+
+/* ---------- COMPARATIVO (semanas comparables, estilo MCI) ---------- */
+function vComparativo(f){
+  // Base = current period. Weeks present in current.
+  const cur=filt(f);
+  const curWeeks=[...new Set(cur.filter(r=>r.sem>0).map(r=>r.sem))].sort((a,b)=>a-b);
+  const N=curWeeks.length||1;
+  // Año anterior, mismo mes, mismas ISO weeks
+  const ya=filt(f,{anio:f.anio-1}).filter(r=>curWeeks.includes(r.sem));
+  const yaFull=filt(f,{anio:f.anio-1});
+  // Mes anterior, mismas primeras N semanas
+  const pm=cmpPeriod(f);
+  const pmAll=filt(f,{anio:pm.anio,mes:pm.mes});
+  const pmWeeks=[...new Set(pmAll.filter(r=>r.sem>0).map(r=>r.sem))].sort((a,b)=>a-b).slice(0,N);
+  const pmc=pmAll.filter(r=>pmWeeks.includes(r.sem));
+  const vC=cur.length,vYA=ya.length,vPM=pmc.length;
+  const dYA=vYA?(vC-vYA)/vYA:null, dPM=vPM?(vC-vPM)/vPM:null;
+
+  // weekly detail vs YA (align by index of week)
+  const wc=curWeeks.map(w=>cur.filter(r=>r.sem===w).length);
+  const wy=curWeeks.map(w=>ya.filter(r=>r.sem===w).length);
+
+  // by sponsor
+  const spKeys=sortedSponsors(groupSum(cur,'sp'));
+  const bySpC=groupSum(cur,'sp'),bySpY=groupSum(ya,'sp'),bySpP=groupSum(pmc,'sp');
+  const rowsSp=spKeys.map(sp=>{const c=bySpC[sp]?bySpC[sp].vt:0,y=bySpY[sp]?bySpY[sp].vt:0,p=bySpP[sp]?bySpP[sp].vt:0;
+    return {sp,c,y,p,dy:y?(c-y)/y:null,dp:p?(c-p)/p:null};});
+
+  onDraw('comparativo',()=>{
+    mkChart('cWeek',{type:'bar',data:{labels:curWeeks.map(w=>'Sem '+w),datasets:[
+      {label:cap(f.mes)+' '+(f.anio-1),data:wy,backgroundColor:'#D8D2C4',borderRadius:4,barPercentage:.7},
+      {label:cap(f.mes)+' '+f.anio,data:wc,backgroundColor:'#1F6F6B',borderRadius:4,barPercentage:.7}
+    ]},options:{plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'#EFECE4'},beginAtZero:true}},maintainAspectRatio:false}});
+  });
+
+  const grewYA=dYA!=null&&dYA>0;
+  return `
+  <div class="grid kpis">
+    ${kpi('Base '+cap(f.mes)+' '+f.anio,fmt(vC),'semanas ISO '+(curWeeks[0]||'-')+'–'+(curWeeks[curWeeks.length-1]||'-')+' ('+N+')',null)}
+    ${kpi('vs '+cap(f.mes)+' '+(f.anio-1),dYA==null?'—':(dYA>0?'+':'')+pct(dYA,1),vC+' vs '+vYA+' (mismas '+N+' sem)',dYA==null?null:{c:dYA>0?'up':'dn',t:dYA>0?'▲ SÍ':'▼ NO',w:0})}
+    ${kpi('vs '+cap(pm.mes)+' '+pm.anio,dPM==null?'—':(dPM>0?'+':'')+pct(dPM,1),vC+' vs '+vPM+' (mismas '+N+' sem)',dPM==null?null:{c:dPM>0?'up':'dn',t:dPM>0?'▲ SÍ':'▼ NO',w:0})}
+    ${kpi(cap(f.mes)+' '+(f.anio-1)+' completo',fmt(yaFull.length),'referencia (todo el mes)',null)}
+  </div>
+
+  <div class="verdict ${grewYA?'good':'bad'}" style="margin-bottom:16px">
+    <b>${grewYA?'✔ Hay crecimiento interanual.':'✘ No crece interanual.'}</b>
+    <span>En las ${N} semanas con registro, ${cap(f.mes)} ${f.anio} ${grewYA?'crece':'cae'} ${dYA==null?'':pct(Math.abs(dYA),1)} vs ${cap(f.mes)} ${f.anio-1} (${vC} vs ${vYA}).
+    Frente a ${cap(pm.mes)} ${dPM==null?'sin dato':(dPM>0?'crece '+pct(dPM,1):'cae '+pct(Math.abs(dPM),1))}.</span>
+  </div>
+
+  <div class="panel"><div class="ph"><h3>Detalle semanal vs ${cap(f.mes)} ${f.anio-1}</h3><span class="note">pólizas por semana ISO</span></div>
+    <div class="pb"><div class="chartbox sm">${cv('cWeek')}</div>
+    <div class="scroll-x" style="margin-top:10px"><table><thead><tr><th>Serie</th>${curWeeks.map(w=>`<th>Sem ${w}</th>`).join('')}<th>Total</th></tr></thead><tbody>
+      <tr><td class="b">${cap(f.mes)} ${f.anio-1}</td>${wy.map(v=>`<td class="num">${fmt(v)}</td>`).join('')}<td class="num b">${fmt(vYA)}</td></tr>
+      <tr><td class="b">${cap(f.mes)} ${f.anio}</td>${wc.map(v=>`<td class="num">${fmt(v)}</td>`).join('')}<td class="num b">${fmt(vC)}</td></tr>
+      <tr class="trow-tot"><td>Δ</td>${curWeeks.map((w,i)=>`<td class="num">${deltaSpan(wc[i]-wy[i])}</td>`).join('')}<td class="num">${deltaSpan(vC-vYA)}</td></tr>
+    </tbody></table></div></div>
+  </div>
+
+  <div class="panel"><div class="ph"><h3>Crecimientos y caídas por sponsor</h3><span class="note">semanas comparables (${N})</span></div>
+    <div class="pb scroll-x"><table><thead><tr><th>Sponsor</th><th>${cap3(f.mes)} ${f.anio-1}</th><th>${cap3(f.mes)} ${f.anio}</th><th>vs ${f.anio-1}</th><th>${cap3(pm.mes)} ${pm.anio}</th><th>vs ${cap3(pm.mes)}</th></tr></thead><tbody>
+      ${rowsSp.map(r=>`<tr><td class="b"><span class="sdot" style="background:${spcol(r.sp)}"></span>${r.sp}</td><td class="num">${fmt(r.y)}</td><td class="num b">${fmt(r.c)}</td><td class="num">${r.dy==null?'—':arrowSpan(r.dy)}</td><td class="num">${fmt(r.p)}</td><td class="num">${r.dp==null?'—':arrowSpan(r.dp)}</td></tr>`).join('')}
+      <tr class="trow-tot"><td>TOTAL</td><td class="num">${fmt(vYA)}</td><td class="num">${fmt(vC)}</td><td class="num">${dYA==null?'—':arrowSpan(dYA)}</td><td class="num">${fmt(vPM)}</td><td class="num">${dPM==null?'—':arrowSpan(dPM)}</td></tr>
+    </tbody></table></div>
+  </div>`;
+}
+
+/* ---------- COMPARADOR (A vs B libre) ---------- */
+const CMP_DIMS=[['periodo','Período'],['sponsor','Sponsor'],['sucursal','Sucursal'],['zona','Zona'],['ejecutivo','Ejecutivo'],['tipo','Tipo de prima']];
+const CMP_KEY={sponsor:'sp',sucursal:'suc',zona:'zona',ejecutivo:'ven',tipo:'tipo'};
+function setCmp(k,v){STATE.cmp=STATE.cmp||{};STATE.cmp[k]=v;if(k==='dim'){STATE.cmp.valA='';STATE.cmp.valB='';}render();}
+function setCmpP(side,part,v){STATE.cmp=STATE.cmp||{};STATE.cmp[side]=Object.assign({},STATE.cmp[side]);STATE.cmp[side][part]=(part==='anio'?+v:v);render();}
+function cmpDistinct(f,dim){const key=CMP_KEY[dim];if(!key)return [];const set=new Set();
+  STATE.rows.forEach(r=>{if(f.sup!=='__ALL__'&&r.sup!==f.sup)return;const v=r[key];if(v&&!/cerrad/i.test(v))set.add(v);});
+  let a=[...set];if(dim==='sponsor')a.sort((x,y)=>{const ix=SP_ORDER.indexOf(x),iy=SP_ORDER.indexOf(y);return (ix<0?99:ix)-(iy<0?99:iy)||x.localeCompare(y);});else a.sort((x,y)=>x.localeCompare(y));return a;}
+
+function vComparador(f){
+  if(!STATE.cmp){const pm=prevPeriod(f.anio,f.mes);STATE.cmp={dim:'periodo',brk:'sponsor',A:{anio:pm.anio,mes:pm.mes},B:{anio:f.anio,mes:f.mes},valA:'',valB:''};}
+  const c=STATE.cmp;
+  // default vals para dims no-periodo
+  if(c.dim!=='periodo'){const opts=cmpDistinct(f,c.dim);if(!c.valA||!opts.includes(c.valA))c.valA=opts[0]||'';if(!c.valB||!opts.includes(c.valB))c.valB=opts[1]||opts[0]||'';}
+  // brk no puede ser igual a dim salvo periodo
+  if(c.brk===c.dim&&c.dim!=='periodo')c.brk = c.dim==='sponsor'?'tipo':'sponsor';
+
+  function side(which){
+    if(c.dim==='periodo'){const p=c[which];return {rows:filt(f,{anio:p.anio,mes:p.mes}),lbl:cap(p.mes)+' '+p.anio,period:p};}
+    const val=which==='A'?c.valA:c.valB;const key=CMP_KEY[c.dim];
+    return {rows:filt(f).filter(r=>r[key]===val),lbl:val||'—',period:{anio:f.anio,mes:f.mes},val};
+  }
+  const A=side('A'),B=side('B');
+  const vtA=A.rows.length,vtB=B.rows.length,fbA=A.rows.reduce((s,r)=>s+r.fb,0),fbB=B.rows.reduce((s,r)=>s+r.fb,0);
+  const dVT=vtA?(vtB-vtA)/vtA:null,dFB=fbA?(fbB-fbA)/fbA:null;
+  const proyBvt=proy(vtB,f),proyBfb=proy(fbB,f);
+  const dProyVt=vtA?(proyBvt-vtA)/vtA:null,dProyFb=fbA?(proyBfb-fbA)/fbA:null;
+  // cumplimiento si período
+  let cumA=null,cumB=null;
+  if(c.dim==='periodo'){const mA=metaTot(Object.assign({},f,{anio:A.period.anio,mes:A.period.mes})).vt;const mB=metaTot(Object.assign({},f,{anio:B.period.anio,mes:B.period.mes})).vt;cumA=mA?vtA/mA:null;cumB=mB?vtB/mB:null;}
+  // desglose
+  const bkey=CMP_KEY[c.brk]||'sp';
+  const gA=groupSum(A.rows,bkey),gB=groupSum(B.rows,bkey);
+  let cats=[...new Set([...Object.keys(gA),...Object.keys(gB)])].filter(x=>x&&x!=='—');
+  cats.sort((x,y)=>((gB[y]?gB[y].vt:0)+(gA[y]?gA[y].vt:0))-((gB[x]?gB[x].vt:0)+(gA[x]?gA[x].vt:0)));
+  const rowsBrk=cats.map(cat=>{const a=gA[cat]?gA[cat].vt:0,b=gB[cat]?gB[cat].vt:0;return {cat,a,b,d:b-a,dp:a?(b-a)/a:null};});
+  const topCats=cats.slice(0,8);
+
+  onDraw('comparador',()=>{
+    mkChart('cCmp',{type:'bar',data:{labels:topCats,datasets:[
+      {label:A.lbl,data:topCats.map(k=>gA[k]?gA[k].vt:0),backgroundColor:'#B7862B',borderRadius:4,barPercentage:.75},
+      {label:B.lbl,data:topCats.map(k=>gB[k]?gB[k].vt:0),backgroundColor:'#1F6F6B',borderRadius:4,barPercentage:.75}
+    ]},options:{plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'#EFECE4'},beginAtZero:true}},maintainAspectRatio:false}});
+  });
+
+  // selectores
+  const dimSel=`<select class="ctrl" onchange="setCmp('dim',this.value)">${CMP_DIMS.map(([v,l])=>`<option value="${v}" ${c.dim===v?'selected':''}>${l}</option>`).join('')}</select>`;
+  const brkSel=`<select class="ctrl" onchange="setCmp('brk',this.value)">${CMP_DIMS.filter(([v])=>v!=='periodo').map(([v,l])=>`<option value="${v}" ${c.brk===v?'selected':''}>${l}</option>`).join('')}</select>`;
+  function pPicker(side){const p=c[side];return `<select class="ctrl" onchange="setCmpP('${side}','anio',this.value)">${STATE.anios.map(a=>`<option ${p.anio===a?'selected':''}>${a}</option>`).join('')}</select>
+    <select class="ctrl" onchange="setCmpP('${side}','mes',this.value)">${MESES.map(m=>`<option value="${m}" ${p.mes===m?'selected':''}>${cap(m)}</option>`).join('')}</select>`;}
+  function vPicker(side){const opts=cmpDistinct(f,c.dim);const val=side==='A'?c.valA:c.valB;return `<select class="ctrl" style="min-width:150px" onchange="setCmp('val${side}',this.value)">${opts.map(o=>`<option ${o===val?'selected':''}>${o}</option>`).join('')}</select>`;}
+  const pickA=c.dim==='periodo'?pPicker('A'):vPicker('A');
+  const pickB=c.dim==='periodo'?pPicker('B'):vPicker('B');
+
+  return `
+  <div class="panel"><div class="pb" style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end">
+    <div class="fgrp" style="flex-direction:column;align-items:flex-start;gap:5px"><label>Comparar por</label>${dimSel}</div>
+    <div class="fgrp" style="flex-direction:column;align-items:flex-start;gap:5px"><label style="color:var(--gold)">${c.dim==='periodo'?'PERÍODO A':'A'}</label><div style="display:flex;gap:6px">${pickA}</div></div>
+    <div style="font-family:Fraunces,serif;font-size:20px;color:var(--mute);padding-bottom:6px">vs</div>
+    <div class="fgrp" style="flex-direction:column;align-items:flex-start;gap:5px"><label style="color:var(--accent)">${c.dim==='periodo'?'PERÍODO B':'B'}</label><div style="display:flex;gap:6px">${pickB}</div></div>
+    <div class="fgrp" style="flex-direction:column;align-items:flex-start;gap:5px;margin-left:auto"><label>Desglosar por</label>${brkSel}</div>
+  </div></div>
+
+  <div class="panel"><div class="ph"><h3>Comparativo — ${A.lbl} vs ${B.lbl}</h3><span class="note">Proyección de B al cierre con ${f.dt}/${f.dh} días hábiles</span></div>
+    <div class="pb scroll-x"><table><thead><tr><th></th><th>${A.lbl} (A)</th><th>${B.lbl} (B)</th><th>Δ</th><th>% Crecim.</th><th>Proyección B</th><th>% Crecim. proy.</th></tr></thead><tbody>
+      <tr><td class="b">Ventas</td><td class="num">${fmt(vtA)}</td><td class="num b">${fmt(vtB)}</td><td class="num ${vtB-vtA>0?'pos':vtB-vtA<0?'neg':'flat'}">${vtB-vtA>0?'+':''}${fmt(vtB-vtA)}</td><td class="num">${dVT==null?'—':arrowSpan(dVT)}</td><td class="num b" style="background:var(--goldbg,#E3E9EF)">${fmt(Math.round(proyBvt))}</td><td class="num">${dProyVt==null?'—':arrowSpan(dProyVt)}</td></tr>
+      <tr><td class="b">Facturación US$</td><td class="num">$${fmt(fbA)}</td><td class="num b">$${fmt(fbB)}</td><td class="num ${fbB-fbA>0?'pos':fbB-fbA<0?'neg':'flat'}">${fbB-fbA>0?'+':''}$${fmt(fbB-fbA)}</td><td class="num">${dFB==null?'—':arrowSpan(dFB)}</td><td class="num b" style="background:#E3E9EF">$${fmt(Math.round(proyBfb))}</td><td class="num">${dProyFb==null?'—':arrowSpan(dProyFb)}</td></tr>
+      ${c.dim==='periodo'?`<tr><td class="b">Cumplimiento</td><td class="num">${pct(cumA||0,0)}</td><td class="num b">${pct(cumB||0,0)}</td><td colspan="4" class="flat" style="text-align:left;padding-left:14px">vs meta de cada período</td></tr>`:''}
+    </tbody></table></div>
+  </div>
+
+  <div class="grid kpis">
+    ${kpi('Colocación B',fmt(vtB),'A: '+fmt(vtA)+' · proy. '+fmt(Math.round(proyBvt)),dVT==null?null:{c:dVT>0?'up':dVT<0?'dn':'fl',t:(dVT>0?'▲ ':'▼ ')+pct(Math.abs(dVT),1),w:50})}
+    ${kpi('Facturación B US$','$'+fmt(fbB),'A: $'+fmt(fbA)+' · proy. $'+fmt(Math.round(proyBfb)),dFB==null?null:{c:dFB>0?'up':dFB<0?'dn':'fl',t:(dFB>0?'▲ ':'▼ ')+pct(Math.abs(dFB),1),w:50})}
+    ${kpi('Proyección B vs A',dProyVt==null?'—':(dProyVt>0?'+':'')+pct(dProyVt,1),'B proyectado '+fmt(Math.round(proyBvt))+' vs '+fmt(vtA),dProyVt==null?null:{c:dProyVt>0?'up':'dn',t:dProyVt>0?'▲':'▼',w:50})}
+    ${kpi('Veredicto',dVT==null?'—':(dVT>0?'B crece':dVT<0?'B cae':'igual'),dVT==null?'sin base':(Math.abs(dVT)>=.15?'diferencia relevante':'diferencia leve'),null)}
+  </div>
+
+  <div class="two">
+    <div class="panel"><div class="ph"><h3>Comparación por ${CMP_DIMS.find(d=>d[0]===c.brk)[1].toLowerCase()}</h3><span class="note">${A.lbl} vs ${B.lbl}</span></div>
+      <div class="pb"><div class="chartbox sm">${cv('cCmp')}</div></div></div>
+    <div class="panel"><div class="ph"><h3>Detalle y diferencias</h3><span class="note">ordenado por volumen</span></div>
+      <div class="pb twrap"><table><thead><tr><th>${CMP_DIMS.find(d=>d[0]===c.brk)[1]}</th><th>${A.lbl}</th><th>${B.lbl}</th><th>Δ</th><th>Δ%</th></tr></thead><tbody>
+      ${rowsBrk.length?rowsBrk.map(r=>`<tr><td class="b">${c.brk==='sponsor'?`<span class="sdot" style="background:${spcol(r.cat)}"></span>`:''}${r.cat}</td><td class="num">${fmt(r.a)}</td><td class="num b">${fmt(r.b)}</td><td class="num ${r.d>0?'pos':r.d<0?'neg':'flat'}">${r.d>0?'+':''}${fmt(r.d)}</td><td class="num">${r.dp==null?'—':arrowSpan(r.dp)}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--mute)">Elegí valores para A y B.</td></tr>'}
+      <tr class="trow-tot"><td>TOTAL</td><td class="num">${fmt(vtA)}</td><td class="num">${fmt(vtB)}</td><td class="num ${vtB-vtA>0?'pos':vtB-vtA<0?'neg':'flat'}">${vtB-vtA>0?'+':''}${fmt(vtB-vtA)}</td><td class="num">${dVT==null?'—':arrowSpan(dVT)}</td></tr>
+      </tbody></table></div></div>
+  </div>`;
+}
+
+/* ---------- TABLA DINÁMICA (PIVOT) ---------- */
+function vRanking(f){
+  const rows=filt(f);const byV={};
+  for(const r of rows){if(!r.ven||/cerrad/i.test(r.ven))continue;const k=r.ven;(byV[k]=byV[k]||{vt:0,fb:0,sp:{},suc:r.suc});byV[k].vt++;byV[k].fb+=r.fb;byV[k].sp[r.sp]=(byV[k].sp[r.sp]||0)+1;}
+  const arr=Object.entries(byV).map(([ven,o])=>({ven,...o,top:Object.keys(o.sp).sort((a,b)=>o.sp[b]-o.sp[a])[0]}));
+  arr.sort((a,b)=>b.vt-a.vt);
+  const cp=cmpPeriod(f);const prevV={};filt(f,{anio:cp.anio,mes:cp.mes}).forEach(r=>{if(r.ven&&!/cerrad/i.test(r.ven))prevV[r.ven]=(prevV[r.ven]||0)+1;});
+  const cpL=cap3(cp.mes)+' '+cp.anio;
+  const activos=arr.length;const maxv=arr.length?arr[0].vt:1;
+  const mode=STATE.rkMode||'todos';
+  let list=arr;
+  if(mode==='top')list=arr.slice(0,20);
+  if(mode==='bottom')list=arr.slice().sort((a,b)=>a.vt-b.vt).slice(0,20);
+  const seg=`<div class="seg"><button onclick="setRk('todos')" class="${mode==='todos'?'on':''}">Todos (${activos})</button><button onclick="setRk('top')" class="${mode==='top'?'on':''}">Top 20</button><button onclick="setRk('bottom')" class="${mode==='bottom'?'on':''}">Los que menos</button></div>`;
+  return `
+  <div class="grid kpis">
+    ${kpi('Ejecutivos con venta',fmt(activos),cap(f.mes)+' '+f.anio,null)}
+    ${kpi('Top colocador',arr[0]?fmt(arr[0].vt):'—',arr[0]?arr[0].ven:'',null)}
+    ${kpi('Promedio por ejecutivo',fmt(activos?rows.length/activos:0,1),'pólizas',null)}
+    ${kpi('Concentración top 5',pct(activos?arr.slice(0,5).reduce((s,r)=>s+r.vt,0)/rows.length:0,0),'del total del mes',null)}
+  </div>
+  <div class="panel"><div class="ph"><h3>Ranking de asesores</h3><span class="note" style="margin-left:auto">${seg}</span></div>
+    <div class="pb twrap"><table><thead><tr><th>#</th><th>Asesor</th><th>Sponsor</th><th>Sucursal</th><th>Pólizas</th><th>${cpL}</th><th>vs comp.</th><th>FB $</th></tr></thead><tbody>
+      ${list.map((r,i)=>{const pvv=prevV[r.ven];const d=pvv?(r.vt-pvv)/pvv:null;return `<tr><td class="b num">${mode==='bottom'?activos-i:i+1}</td><td class="b">${r.ven}</td><td><span class="sdot" style="background:${spcol(r.top)}"></span>${r.top}</td><td style="color:var(--mute)">${r.suc||'—'}</td><td class="num b">${fmt(r.vt)}</td><td class="num">${pvv!=null?fmt(pvv):'·'}</td><td class="num">${d==null?'—':arrowSpan(d)}</td><td class="num">$${fmt(r.fb)}</td></tr>`}).join('')}
+    </tbody></table></div></div>`;
+}
+
+/* ---------- SEMANAL / PROYECCIÓN ---------- */
+function vSemanal(f){
+  const rows=filt(f);
+  const weeks=[...new Set(rows.filter(r=>r.sem>0).map(r=>r.sem))].sort((a,b)=>a-b);
+  const perWeek=weeks.map(w=>rows.filter(r=>r.sem===w).length);
+  // acumulado y proyección lineal por semana
+  let acc=0;const cumu=perWeek.map(v=>acc+=v);
+  const metaVT=metaTot(f).vt;
+  // VT diaria por sponsor x semana (matriz)
+  const spKeys=sortedSponsors(groupSum(rows,'sp'));
+  const matrix=spKeys.map(sp=>({sp,w:weeks.map(w=>rows.filter(r=>r.sp===sp&&r.sem===w).length),t:rows.filter(r=>r.sp===sp).length}));
+  const cp=cmpPeriod(f);const cpRows=filt(f,{anio:cp.anio,mes:cp.mes});
+  const cpWeeks=[...new Set(cpRows.filter(r=>r.sem>0).map(r=>r.sem))].sort((a,b)=>a-b);
+  let a2=0;const cpCumu=cpWeeks.map(w=>a2+=cpRows.filter(r=>r.sem===w).length);
+  const cpAligned=weeks.map((_,i)=>cpCumu[i]!=null?cpCumu[i]:null);
+  const cpAtSame=cpCumu.length?cpCumu[Math.min(weeks.length,cpCumu.length)-1]:0;
+  const curAcc=cumu[cumu.length-1]||0;const dcp=cpAtSame?(curAcc-cpAtSame)/cpAtSame:null;
+  const cpL=cap3(cp.mes)+' '+cp.anio;
+  const proyFinal=Math.round(proy(curAcc,f));
+  const proyLine=weeks.map((_,i)=>Math.round(proyFinal*(i+1)/weeks.length));
+
+  onDraw('semanal',()=>{
+    mkChart('cCum',{type:'line',data:{labels:weeks.map(w=>'Sem '+w),datasets:[
+      {label:'Acumulado',data:cumu,borderColor:'#1F6F6B',backgroundColor:'rgba(31,111,107,.08)',fill:true,tension:.25,borderWidth:2.5,pointRadius:3},
+      {label:'Proyección cierre',data:proyLine,borderColor:'#B7862B',borderDash:[5,4],tension:.25,borderWidth:2,pointRadius:0},
+      {label:cpL,data:cpAligned,borderColor:'#8A929A',borderDash:[2,3],tension:.25,borderWidth:1.8,pointRadius:0}
+    ]},options:{plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'#EFECE4'},beginAtZero:true}},maintainAspectRatio:false}});
+    mkChart('cWk',{type:'bar',data:{labels:weeks.map(w=>'Sem '+w),datasets:[{data:perWeek,backgroundColor:'#1F6F6B',borderRadius:5,barPercentage:.6}]},
+      options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#EFECE4'},beginAtZero:true}},maintainAspectRatio:false}});
+  });
+
+  return `
+  <div class="grid kpis">
+    ${kpi('Semanas con registro',fmt(weeks.length),'ISO '+(weeks[0]||'-')+'–'+(weeks[weeks.length-1]||'-'),null)}
+    ${kpi('Acumulado',fmt(curAcc),'pólizas a la fecha',null)}
+    ${kpi('Proyección cierre',fmt(proyFinal),curAcc+' ÷ '+f.dt+' × '+f.dh+' días hábiles',{c:metaVT&&proyFinal/metaVT>=1?'up':'fl',t:metaVT?pct(proyFinal/metaVT,0):'—',w:metaVT?Math.min(100,proyFinal/metaVT*100):0})}
+    ${kpi('Meta del mes',fmt(metaVT),'objetivo pólizas',null)}
+    ${kpi('Vs '+cpL,dcp==null?'—':(dcp>0?'+':'')+pct(dcp,1),'mismo # semanas: '+fmt(curAcc)+' vs '+fmt(cpAtSame),dcp==null?null:{c:dcp>0?'up':'dn',t:dcp>0?'▲':'▼',w:50})}
+  </div>
+  <div class="two">
+    <div class="panel"><div class="ph"><h3>Evolución acumulada</h3><span class="note">cómo avanza hacia el cierre</span></div><div class="pb"><div class="chartbox sm">${cv('cCum')}</div></div></div>
+    <div class="panel"><div class="ph"><h3>Pólizas por semana</h3></div><div class="pb"><div class="chartbox sm">${cv('cWk')}</div></div></div>
+  </div>
+  <div class="panel"><div class="ph"><h3>Colocación por sponsor × semana</h3><span class="note">${cap(f.mes)} ${f.anio}</span></div>
+    <div class="pb scroll-x"><table><thead><tr><th>Sponsor</th>${weeks.map(w=>`<th>Sem ${w}</th>`).join('')}<th>Total</th></tr></thead><tbody>
+      ${matrix.map(m=>`<tr><td class="b"><span class="sdot" style="background:${spcol(m.sp)}"></span>${m.sp}</td>${m.w.map(v=>`<td class="num">${v||'·'}</td>`).join('')}<td class="num b">${fmt(m.t)}</td></tr>`).join('')}
+      <tr class="trow-tot"><td>TOTAL</td>${perWeek.map(v=>`<td class="num">${fmt(v)}</td>`).join('')}<td class="num">${fmt(rows.length)}</td></tr>
+    </tbody></table></div>
+  </div>`;
+}
+
+/* helpers */
+function cv(id){return `<canvas id="${id}"></canvas>`}
+function sum(arr,k){return arr.reduce((s,o)=>s+o[k],0)}
+function cap3(m){return cap(norm(m)).slice(0,3)}
+function sucSpCell(n){const sp=STATE.sucSp&&STATE.sucSp[n];return `<td>${sp?`<span class="sdot" style="background:${spcol(sp)}"></span>${sp}`:'—'}</td>`;}
+function prevPeriod(anio,mes){const i=monthIdx(mes);if(i<=0)return{anio:anio-1,mes:MESES[11]};return{anio,mes:MESES[i-1]};}
+function cmpPeriod(f){const m=STATE.cmpMode||'prev';
+  if(m==='year')return {anio:f.anio-1,mes:f.mes};
+  if(m==='custom'&&STATE.cmpMes)return {anio:+(STATE.cmpAnio||f.anio-1),mes:STATE.cmpMes};
+  return prevPeriod(f.anio,f.mes);}
+function setCmpMode(v){STATE.cmpMode=v;if(v==='custom'&&!STATE.cmpMes){const pp=prevPeriod(F().anio,F().mes);STATE.cmpAnio=pp.anio;STATE.cmpMes=pp.mes;}render();}
+function setCmpAnioG(v){STATE.cmpAnio=+v;render();}
+function setCmpMesG(v){STATE.cmpMes=v;render();}
+
+/* ===== Análisis: oficinas en cero, apagados, riesgo, insights ===== */
+function zeroOffices(f){
+  const rows=filt(f);const pm=cmpPeriod(f);const rowsP=filt(f,{anio:pm.anio,mes:pm.mes});
+  const cur=groupSum(rows.filter(r=>r.suc&&!/cerrad/i.test(r.suc)),'suc');
+  const prev=groupSum(rowsP.filter(r=>r.suc&&!/cerrad/i.test(r.suc)),'suc');
+  const yr=groupSum(filt(f,{anio:f.anio-1}).filter(r=>r.suc&&!/cerrad/i.test(r.suc)),'suc');
+  const curHK=new Set(Object.keys(cur).map(hkey));const uni={};
+  Object.keys(prev).forEach(s=>{const k=hkey(s);(uni[k]=uni[k]||{name:s,j:0,y:0}).j=prev[s].vt;});
+  Object.keys(yr).forEach(s=>{const k=hkey(s);(uni[k]=uni[k]||{name:s,j:0,y:0}).y=yr[s].vt;});
+  const roster=f.sup==='__ALL__'?[].concat(...Object.values(REF.sucsup)):(REF.sucsup[f.sup]||[]);
+  roster.forEach(s=>{const k=hkey(s);if(!uni[k])uni[k]={name:s,j:0,y:0,homol:true};});
+  return Object.values(uni).filter(o=>!curHK.has(hkey(o.name))).sort((a,b)=>(b.j+b.y)-(a.j+a.y));
+}
+function apagados(f){
+  const cur=new Set(filt(f).filter(r=>r.ven&&!/cerrad/i.test(r.ven)).map(r=>r.ven));
+  const pm=cmpPeriod(f);const pv={};
+  filt(f,{anio:pm.anio,mes:pm.mes}).forEach(r=>{if(r.ven&&!/cerrad/i.test(r.ven))pv[r.ven]=(pv[r.ven]||0)+1;});
+  return Object.keys(pv).filter(v=>!cur.has(v)).map(v=>({ven:v,prev:pv[v],sp:STATE.venSp&&STATE.venSp[v],suc:STATE.venSuc&&STATE.venSuc[v]})).sort((a,b)=>b.prev-a.prev);
+}
+function sponsorRisk(f){
+  const MT=metaTot(f);const bySp=groupSum(filt(f),'sp');
+  return Object.keys(MT.mS).map(sp=>{const meta=+MT.mS[sp].vt||0;const log=bySp[sp]?bySp[sp].vt:0;const p=proy(log,f);return {sp,meta,log,proy:p,pc:meta?p/meta:null};})
+    .filter(x=>x.meta>0).sort((a,b)=>(a.pc==null?9:a.pc)-(b.pc==null?9:b.pc));
+}
+function caidasSuc(f){
+  const rows=filt(f);const pm=cmpPeriod(f);const rowsP=filt(f,{anio:pm.anio,mes:pm.mes});
+  const cur=groupSum(rows.filter(r=>r.suc&&!/cerrad/i.test(r.suc)),'suc');
+  const prev=groupSum(rowsP.filter(r=>r.suc&&!/cerrad/i.test(r.suc)),'suc');
+  const all=[...new Set([...Object.keys(cur),...Object.keys(prev)])];
+  return all.map(s=>({s,j:prev[s]?prev[s].vt:0,a:cur[s]?cur[s].vt:0})).map(o=>({...o,d:o.a-o.j})).filter(o=>o.d<0).sort((x,y)=>x.d-y.d);
+}
+function genInsights(f){
+  const rows=filt(f);if(!rows.length)return [];
+  const vt=rows.length;const MT=metaTot(f);const metaVT=MT.vt;const pv=proy(vt,f);const pcum=metaVT?pv/metaVT:0;const cum=metaVT?vt/metaVT:0;
+  const pm=cmpPeriod(f);const prev=filt(f,{anio:pm.anio,mes:pm.mes});
+  const ya=filt(f,{anio:f.anio-1});
+  const bySp=groupSum(rows,'sp'),bySpP=groupSum(prev,'sp');
+  const out=[];
+  if(metaVT)out.push(`Cumplimiento <b>${pct(cum,0)}</b> (${fmt(vt)}/${fmt(metaVT)}). Al ritmo actual proyecta <b>${fmt(Math.round(pv))}</b> = ${pct(pcum,0)} de la meta${pcum<1?`; faltarían ${fmt(Math.max(0,metaVT-Math.round(pv)))} para llegar`:' — en camino a cumplir'}.`);
+  if(prev.length)out.push(`Vs ${cap(pm.mes)}: ${vt>=prev.length?'crece':'cae'} ${pct(Math.abs((vt-prev.length)/prev.length),0)} (${fmt(prev.length)}→${fmt(vt)}).`);
+  if(ya.length)out.push(`Vs ${cap(f.mes)} ${f.anio-1}: ${vt>=ya.length?'crece':'cae'} ${pct(Math.abs((vt-ya.length)/ya.length),0)} (${fmt(ya.length)}→${fmt(vt)}).`);
+  const dl=Object.keys(bySp).map(sp=>{const c=bySp[sp].vt,p=bySpP[sp]?bySpP[sp].vt:0;return {sp,c,p,d:p?(c-p)/p:null};}).filter(x=>x.d!=null);
+  const grow=dl.slice().sort((a,b)=>b.d-a.d)[0],fall=dl.slice().sort((a,b)=>a.d-b.d)[0];
+  if(grow&&grow.d>0)out.push(`Mejor dinámica: <b>${grow.sp}</b> +${pct(grow.d,0)} vs ${cap(pm.mes)} (${fmt(grow.p)}→${fmt(grow.c)}); ver qué replicar en otros canales.`);
+  if(fall&&fall.d<0)out.push(`Mayor caída: <b>${fall.sp}</b> −${pct(Math.abs(fall.d),0)} vs ${cap(pm.mes)} (${fmt(fall.p)}→${fmt(fall.c)}); atención prioritaria.`);
+  const z=zeroOffices(f).length, ap=apagados(f).length;
+  if(z)out.push(`<b>${fmt(z)}</b> oficinas en cero o que dejaron de aparecer este mes.`);
+  if(ap)out.push(`<b>${fmt(ap)}</b> ejecutivos que vendían en ${cap(pm.mes)} hoy sin colocación.`);
+  return out;
+}
+
+/* ---------- ALERTAS ---------- */
+function vAlertas(f){
+  const rows=filt(f);const vt=rows.length;const MT=metaTot(f);const metaVT=MT.vt;const pv=proy(vt,f);const pcum=metaVT?pv/metaVT:0;
+  const zero=zeroOffices(f);const ap=apagados(f);const risk=sponsorRisk(f).filter(x=>x.pc!=null&&x.pc<0.9);const caidas=caidasSuc(f);
+  const sem=pcum>=1?'good':pcum>=0.8?'neu':'bad';
+  const insights=genInsights(f);
+  return `
+  <div class="verdict ${sem}" style="margin-bottom:16px"><b>${pcum>=1?'✔ En camino a la meta.':pcum>=0.8?'▲ Cerca, pero exige ritmo.':'✘ En riesgo de no llegar.'}</b>
+    <span>Proyección ${fmt(Math.round(pv))} de ${fmt(metaVT)} (${pct(pcum,0)}). ${(f.dh-f.dt)>0?`Quedan ${f.dh-f.dt} días hábiles; se necesitan ${fmt(Math.max(0,metaVT-vt)/Math.max(1,f.dh-f.dt),1)}/día.`:''}</span></div>
+
+  <div class="grid kpis">
+    ${kpi('Riesgo de meta',pct(pcum,0),pcum>=1?'proyecta cumplir':'bajo lo necesario',{c:pcum>=1?'up':pcum>=.8?'fl':'dn',t:pcum>=1?'OK':'⚠',w:Math.min(100,pcum*100)})}
+    ${kpi('Sponsors bajo ritmo',fmt(risk.length),'proyección < 90% meta',{c:risk.length?'dn':'up',t:risk.length?'⚠':'✓',w:0})}
+    ${kpi('Oficinas en cero',fmt(zero.length),'sin colocación este mes',{c:zero.length?'dn':'up',t:zero.length?'▼':'✓',w:0})}
+    ${kpi('Ejecutivos apagados',fmt(ap.length),'vendían y hoy en 0',{c:ap.length?'dn':'up',t:ap.length?'▼':'✓',w:0})}
+  </div>
+
+  <div class="panel"><div class="ph"><h3>🔎 Lectura rápida</h3><span class="note">diagnóstico automático</span></div>
+    <div class="pb"><ul style="margin:0;padding-left:18px;line-height:1.9">${insights.map(s=>`<li>${s}</li>`).join('')}</ul></div></div>
+
+  <div class="panel"><div class="ph"><h3>Detalle de alertas</h3><span class="note" style="margin-left:auto"><div class="seg">
+    <button onclick="setAlTab('sponsors')" class="${(STATE.alTab||'sponsors')==='sponsors'?'on':''}">Sponsors bajo ritmo (${risk.length})</button>
+    <button onclick="setAlTab('caidas')" class="${STATE.alTab==='caidas'?'on':''}">Caídas de oficinas (${caidas.length})</button>
+    <button onclick="setAlTab('cero')" class="${STATE.alTab==='cero'?'on':''}">Oficinas en cero (${zero.length})</button>
+    <button onclick="setAlTab('apagados')" class="${STATE.alTab==='apagados'?'on':''}">Ejecutivos apagados (${ap.length})</button>
+  </div></span></div>
+    <div class="pb twrap">${(function(){const t=STATE.alTab||'sponsors';
+      if(t==='sponsors')return `<table><thead><tr><th>Sponsor</th><th>Meta</th><th>Logrado</th><th>Proy.</th><th>Cumpl. proy.</th></tr></thead><tbody>
+        ${risk.length?risk.map(r=>`<tr><td class="b"><span class="sdot" style="background:${spcol(r.sp)}"></span>${r.sp}</td><td class="num">${fmt(r.meta)}</td><td class="num b">${fmt(r.log)}</td><td class="num">${fmt(Math.round(r.proy))}</td><td class="num ${r.pc<.8?'neg':'flat'}">${pct(r.pc,0)}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--mute)">Todos en ritmo.</td></tr>'}</tbody></table>`;
+      if(t==='caidas')return `<table><thead><tr><th>Sucursal</th><th>Sponsor</th><th>Ant.</th><th>Actual</th><th>Δ</th></tr></thead><tbody>
+        ${caidas.length?caidas.map(o=>`<tr><td>${o.s}</td>${sucSpCell(o.s)}<td class="num">${fmt(o.j)}</td><td class="num b">${fmt(o.a)}</td><td class="num neg">${fmt(o.d)}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--mute)">Sin caídas.</td></tr>'}</tbody></table>`;
+      if(t==='cero')return `<table><thead><tr><th>Sucursal</th><th>Sponsor</th><th>Mes ant.</th><th>Año ant.</th></tr></thead><tbody>
+        ${zero.length?zero.map(o=>`<tr><td>${o.name}</td>${sucSpCell(o.name)}<td class="num">${o.j||'·'}</td><td class="num">${o.y||'·'}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--mute)">Todas activas.</td></tr>'}</tbody></table>`;
+      return `<table><thead><tr><th>Ejecutivo</th><th>Oficina</th><th>Sponsor</th><th>Mes ant.</th></tr></thead><tbody>
+        ${ap.length?ap.map(o=>`<tr><td class="b">${o.ven}</td><td style="color:var(--mute)">${o.suc||'—'}</td><td>${o.sp?`<span class="sdot" style="background:${spcol(o.sp)}"></span>${o.sp}`:'—'}</td><td class="num">${fmt(o.prev)}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--mute)">Ninguno.</td></tr>'}</tbody></table>`;
+    })()}</div></div>`;
+}
+
+/* ===== Exportar a Excel ===== */
+function exportXlsx(){
+  if(!STATE.ready){alert('Primero importá el reporte.');return;}
+  const f=F();const wb=XLSX.utils.book_new();
+  const rows=filt(f);const bySp=groupSum(rows,'sp');const MT=metaTot(f);const sps=sortedSponsors(bySp);
+  const ritmo=[['Sponsor','Meta VT','Logrado','Cumpl%','Proyeccion','Falta','FB USD','Meta FB USD']];
+  sps.forEach(sp=>{const m=MT.mS[sp.toUpperCase()]||{vt:0,fb:0};const log=bySp[sp].vt;const meta=+m.vt||0;ritmo.push([sp,meta,log,meta?+((log/meta)*100).toFixed(1):'',Math.round(proy(log,f)),Math.max(0,meta-log),Math.round(bySp[sp].fb),+m.fb||0]);});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ritmo),'Ritmo');
+  // Sucursales
+  const suc=[['Sucursal','Sponsor','Polizas','FB USD']];const bySuc=groupSum(rows.filter(r=>r.suc),'suc');
+  Object.keys(bySuc).sort((a,b)=>bySuc[b].vt-bySuc[a].vt).forEach(s=>suc.push([s,(STATE.sucSp&&STATE.sucSp[s])||'',bySuc[s].vt,Math.round(bySuc[s].fb)]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(suc),'Sucursales');
+  // Ranking
+  const rk=[['Ejecutivo','Sponsor','Sucursal','Polizas','FB USD']];const byV={};
+  rows.forEach(r=>{if(!r.ven||/cerrad/i.test(r.ven))return;(byV[r.ven]=byV[r.ven]||{vt:0,fb:0,suc:r.suc});byV[r.ven].vt++;byV[r.ven].fb+=r.fb;});
+  Object.keys(byV).sort((a,b)=>byV[b].vt-byV[a].vt).forEach(v=>rk.push([v,(STATE.venSp&&STATE.venSp[v])||'',byV[v].suc||'',byV[v].vt,Math.round(byV[v].fb)]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rk),'Ranking');
+  // En cero
+  const z=[['Sucursal','Sponsor','Mes ant','Año ant']];zeroOffices(f).forEach(o=>z.push([o.name,(STATE.sucSp&&STATE.sucSp[o.name])||'',o.j||0,o.y||0]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(z),'En cero');
+  const nm=`Colocacion_${(f.sup==='__ALL__'?'Lider':f.sup).replace(/\s+/g,'')}_${f.mes}_${f.anio}.xlsx`;
+  XLSX.writeFile(wb,nm);
+}
+
+/* ---------- SCORECARD por sponsor ---------- */
+function vScorecard(f){
+  const rows=filt(f);const MT=metaTot(f);const bySp=groupSum(rows,'sp');const sps=sortedSponsors(bySp);
+  const pm=cmpPeriod(f);const prev=groupSum(filt(f,{anio:pm.anio,mes:pm.mes}),'sp');const ya=groupSum(filt(f,{anio:f.anio-1}),'sp');
+  function actives(rws,key){const m={};rws.forEach(r=>{if(!r[key]||/cerrad/i.test(r[key]))return;(m[r.sp]=m[r.sp]||new Set()).add(r[key]);});return m;}
+  const sucA=actives(rows,'suc'),ejA=actives(rows,'ven');
+  const D=sps.map(sp=>{const m=MT.mS[sp.toUpperCase()]||{vt:0,fb:0};const meta=+m.vt||0;const log=bySp[sp].vt;const pr=proy(log,f);
+    const pmv=prev[sp]?prev[sp].vt:0,yav=ya[sp]?ya[sp].vt:0;
+    return {sp,meta,log,cum:meta?log/meta:0,proy:pr,pcum:meta?pr/meta:0,fb:bySp[sp].fb,mfb:+m.fb||0,suc:(sucA[sp]||new Set()).size,ej:(ejA[sp]||new Set()).size,dpm:pmv?(log-pmv)/pmv:null,dya:yav?(log-yav)/yav:null};});
+  const T={meta:D.reduce((s,r)=>s+r.meta,0),log:D.reduce((s,r)=>s+r.log,0),proy:D.reduce((s,r)=>s+r.proy,0),fb:D.reduce((s,r)=>s+r.fb,0),mfb:D.reduce((s,r)=>s+r.mfb,0),suc:D.reduce((s,r)=>s+r.suc,0),ej:D.reduce((s,r)=>s+r.ej,0)};
+  onDraw('scorecard',()=>{
+    mkChart('cScore',{type:'bar',data:{labels:D.map(r=>r.sp),datasets:[
+      {label:'Cumpl. actual %',data:D.map(r=>+(r.cum*100).toFixed(0)),backgroundColor:D.map(r=>spcol(r.sp)),borderRadius:4,barPercentage:.7},
+      {label:'Proyección %',data:D.map(r=>+(r.pcum*100).toFixed(0)),backgroundColor:'#D8D2C4',borderRadius:4,barPercentage:.7}
+    ]},options:{plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'#EFECE4'},beginAtZero:true,ticks:{callback:v=>v+'%'}}},maintainAspectRatio:false}});
+  });
+  return `
+  <div class="panel"><div class="ph"><h3>Scorecard por sponsor</h3><span class="note">${cap(f.mes)} ${f.anio} · ${f.sup==='__ALL__'?'Líder':f.sup} · FB en US$</span></div>
+    <div class="pb"><div class="chartbox sm">${cv('cScore')}</div></div></div>
+  <div class="panel"><div class="pb scroll-x"><table><thead><tr><th>Sponsor</th><th>Meta</th><th>Logrado</th><th>Cumpl.</th><th>Avance</th><th>Proy.</th><th>%Proy</th><th>vs ${cap3(pm.mes)}</th><th>vs ${f.anio-1}</th><th>Suc.act</th><th>Ejec.act</th><th>FB $</th><th>Meta FB $</th></tr></thead><tbody>
+    ${D.map(r=>`<tr><td class="b"><span class="sdot" style="background:${spcol(r.sp)}"></span>${r.sp}</td><td class="num">${fmt(r.meta)}</td><td class="num b">${fmt(r.log)}</td><td class="num">${pct(r.cum,0)}</td>
+      <td style="width:90px"><span class="mini"><i style="width:${Math.min(100,r.cum*100)}%;background:${r.cum>=1?'var(--pos)':spcol(r.sp)}"></i></span></td>
+      <td class="num">${fmt(Math.round(r.proy))}</td><td class="num ${r.pcum>=1?'pos':r.pcum>=.8?'flat':'neg'}">${pct(r.pcum,0)}</td>
+      <td class="num">${r.dpm==null?'—':arrowSpan(r.dpm)}</td><td class="num">${r.dya==null?'—':arrowSpan(r.dya)}</td>
+      <td class="num">${fmt(r.suc)}</td><td class="num">${fmt(r.ej)}</td><td class="num">$${fmt(r.fb)}</td><td class="num" style="color:var(--mute)">$${fmt(r.mfb)}</td></tr>`).join('')}
+    <tr class="trow-tot"><td>TOTAL</td><td class="num">${fmt(T.meta)}</td><td class="num">${fmt(T.log)}</td><td class="num">${pct(T.meta?T.log/T.meta:0,0)}</td>
+      <td><span class="mini"><i style="width:${Math.min(100,(T.meta?T.log/T.meta:0)*100)}%"></i></span></td>
+      <td class="num">${fmt(Math.round(T.proy))}</td><td class="num">${pct(T.meta?T.proy/T.meta:0,0)}</td><td></td><td></td><td class="num">${fmt(T.suc)}</td><td class="num">${fmt(T.ej)}</td><td class="num">$${fmt(T.fb)}</td><td class="num">$${fmt(T.mfb)}</td></tr>
+  </tbody></table></div></div>`;
+}
+
+/* ===== Generar PPT del MCI ===== */
+function stripTags(s){return String(s).replace(/<[^>]+>/g,'');}
+function generatePPT(){
+  if(!STATE.ready){alert('Primero importá el reporte.');return;}
+  if(typeof PptxGenJS==='undefined'){alert('No se cargó la librería de PowerPoint (revisá tu conexión).');return;}
+  const f=F();const supN=f.sup==='__ALL__'?'Líder':f.sup;
+  const rows=filt(f);const vt=rows.length;const fb=rows.reduce((s,r)=>s+r.fb,0);
+  const MT=metaTot(f);const metaVT=MT.vt,metaFB=MT.fb;const cum=metaVT?vt/metaVT:0;const pv=proy(vt,f);const pcum=metaVT?pv/metaVT:0;
+  const pm=cmpPeriod(f);const prevN=filt(f,{anio:pm.anio,mes:pm.mes}).length;const dPM=prevN?(vt-prevN)/prevN:null;
+  const yaN=filt(f,{anio:f.anio-1}).length;const dYA=yaN?(vt-yaN)/yaN:null;
+  const bySp=groupSum(rows,'sp');const sps=sortedSponsors(bySp);
+  const sucAct=new Set(rows.filter(r=>r.suc&&!/cerrad/i.test(r.suc)).map(r=>r.suc)).size;
+  const ejAct=new Set(rows.filter(r=>r.ven&&!/cerrad/i.test(r.ven)).map(r=>r.ven)).size;
+  const zero=zeroOffices(f);const caidas=caidasSuc(f);const insights=genInsights(f).map(stripTags);
+  const BG='ECEEF1',INK='2F3A44',MUTE='727A82',POS='2F7D52',NEG='B0473F',CARD='FFFFFF',LINE='D7DCE2',GOLD='9FB1C2';
+  const HEAD='Georgia',BODY='Calibri';
+  const p=new PptxGenJS();p.defineLayout({name:'W',width:13.333,height:7.5});p.layout='W';
+  const money=n=>'$'+fmt(Math.round(n));
+  const bgSlide=()=>{const s=p.addSlide();s.background={color:BG};return s;};
+  const head=(s,kick,title)=>{s.addText(kick.toUpperCase(),{x:0.6,y:0.45,w:12,h:0.3,fontFace:BODY,fontSize:11,color:GOLD,charSpacing:2,bold:true});
+    s.addText(title,{x:0.6,y:0.72,w:12,h:0.7,fontFace:HEAD,fontSize:30,color:INK,bold:true});
+    s.addShape(p.ShapeType.line,{x:0.62,y:1.5,w:2.2,h:0,line:{color:INK,width:2}});};
+  const tr=(v,al)=>({text:String(v),options:{fontFace:BODY,fontSize:11,align:al||'center',color:'262B30'}});
+
+  let s=bgSlide();
+  s.addShape(p.ShapeType.rect,{x:0,y:0,w:13.333,h:7.5,fill:{color:INK}});
+  s.addText('REPORTE DE COLOCACIÓN',{x:0.9,y:2.4,w:11,h:0.4,fontFace:BODY,fontSize:14,color:GOLD,charSpacing:3,bold:true});
+  s.addText(cap(f.mes)+' '+f.anio,{x:0.85,y:2.8,w:11.5,h:1.1,fontFace:HEAD,fontSize:54,color:'FFFFFF',bold:true});
+  s.addText(supN+'  ·  Colocación, cobertura y plan',{x:0.9,y:3.95,w:11,h:0.5,fontFace:BODY,fontSize:16,color:'C7D0D6'});
+  s.addText('ASYS / Grupo Internacional de Seguros',{x:0.9,y:6.6,w:11,h:0.4,fontFace:BODY,fontSize:12,color:GOLD});
+
+  s=bgSlide();head(s,'01 · Resumen','KPIs del mes');
+  const cards=[['Colocación',fmt(vt)+' / '+fmt(metaVT),'Cumplimiento '+pct(cum,0)],
+    ['Proyección cierre',fmt(Math.round(pv)),pct(pcum,0)+' de la meta'],
+    ['Facturación',money(fb),'meta '+money(metaFB)],
+    ['Sucursales activas',fmt(sucAct),''],['Ejecutivos activos',fmt(ejAct),''],
+    ['Vs año anterior',dYA==null?'—':(dYA>0?'+':'')+pct(dYA,0),cap(f.mes)+' '+(f.anio-1)]];
+  cards.forEach((c,i)=>{const col=i%3,row=Math.floor(i/3);const x=0.6+col*4.15,y=1.9+row*2.35;
+    s.addShape(p.ShapeType.roundRect,{x,y,w:3.9,h:2.1,rectRadius:0.08,fill:{color:CARD},line:{color:LINE,width:1}});
+    s.addText(c[0],{x:x+0.25,y:y+0.2,w:3.4,h:0.35,fontFace:BODY,fontSize:12,color:MUTE,bold:true});
+    s.addText(c[1],{x:x+0.22,y:y+0.6,w:3.5,h:0.8,fontFace:HEAD,fontSize:30,color:INK,bold:true});
+    if(c[2])s.addText(c[2],{x:x+0.25,y:y+1.5,w:3.4,h:0.4,fontFace:BODY,fontSize:12,color:MUTE});});
+
+  s=bgSlide();head(s,'02 · Comparativo','¿Hubo crecimiento?');
+  const grewYA=dYA!=null&&dYA>0,grewPM=dPM!=null&&dPM>0;
+  s.addShape(p.ShapeType.roundRect,{x:0.6,y:1.9,w:5.9,h:2.2,rectRadius:0.08,fill:{color:CARD},line:{color:LINE,width:1}});
+  s.addText('vs '+cap(f.mes)+' '+(f.anio-1),{x:0.85,y:2.1,w:5.4,h:0.4,fontFace:BODY,fontSize:13,color:MUTE,bold:true});
+  s.addText(dYA==null?'—':(dYA>0?'+':'')+pct(dYA,1),{x:0.85,y:2.5,w:5.4,h:0.8,fontFace:HEAD,fontSize:40,color:grewYA?POS:NEG,bold:true});
+  s.addText((grewYA?'▲ SÍ CRECIÓ':'▼ NO CRECIÓ')+'   '+fmt(yaN)+' → '+fmt(vt),{x:0.85,y:3.4,w:5.4,h:0.4,fontFace:BODY,fontSize:14,color:grewYA?POS:NEG,bold:true});
+  s.addShape(p.ShapeType.roundRect,{x:6.8,y:1.9,w:5.9,h:2.2,rectRadius:0.08,fill:{color:CARD},line:{color:LINE,width:1}});
+  s.addText('vs '+cap(pm.mes)+' '+pm.anio,{x:7.05,y:2.1,w:5.4,h:0.4,fontFace:BODY,fontSize:13,color:MUTE,bold:true});
+  s.addText(dPM==null?'—':(dPM>0?'+':'')+pct(dPM,1),{x:7.05,y:2.5,w:5.4,h:0.8,fontFace:HEAD,fontSize:40,color:grewPM?POS:NEG,bold:true});
+  s.addText((grewPM?'▲ CRECE':'▼ CAE')+'   '+fmt(prevN)+' → '+fmt(vt),{x:7.05,y:3.4,w:5.4,h:0.4,fontFace:BODY,fontSize:14,color:grewPM?POS:NEG,bold:true});
+  s.addText(insights[0]||'',{x:0.6,y:4.4,w:12.1,h:0.9,fontFace:BODY,fontSize:15,color:INK});
+
+  s=bgSlide();head(s,'03 · Sponsors','Ritmo y cumplimiento por sponsor');
+  const th={fill:INK,color:'FFFFFF',bold:true,fontFace:BODY,fontSize:11,align:'center',valign:'middle'};
+  let tbl=[[{text:'Sponsor',options:{...th,align:'left'}},{text:'Meta',options:th},{text:'Logrado',options:th},{text:'Cumpl.',options:th},{text:'Proy.',options:th},{text:'%Proy',options:th},{text:'FB $',options:th}]];
+  sps.forEach(sp=>{const m=MT.mS[sp.toUpperCase()]||{vt:0,fb:0};const meta=+m.vt||0;const log=bySp[sp].vt;const pr=proy(log,f);
+    tbl.push([tr(sp,'left'),tr(fmt(meta)),tr(fmt(log)),tr(pct(meta?log/meta:0,0)),tr(fmt(Math.round(pr))),tr(pct(meta?pr/meta:0,0)),tr(money(bySp[sp].fb))]);});
+  tbl.push([{text:'TOTAL',options:{fontFace:BODY,fontSize:11,bold:true,align:'left',fill:'F3F5F1'}},tr(fmt(metaVT)),tr(fmt(vt)),tr(pct(cum,0)),tr(fmt(Math.round(pv))),tr(pct(pcum,0)),tr(money(fb))]);
+  s.addTable(tbl,{x:0.6,y:1.75,w:12.1,colW:[3.1,1.5,1.5,1.5,1.5,1.5,1.5],border:{type:'solid',color:LINE,pt:0.5},rowH:0.32});
+
+  s=bgSlide();head(s,'04 · Cobertura','Sucursales: cobertura y caídas');
+  s.addText('Sucursales activas: '+fmt(sucAct)+'   ·   En cero / no aparecen: '+fmt(zero.length),{x:0.6,y:1.65,w:12,h:0.4,fontFace:BODY,fontSize:14,color:INK,bold:true});
+  const cth={fill:INK,color:'FFFFFF',bold:true,fontFace:BODY,fontSize:10,align:'center'};
+  let ct=[[{text:'Sucursal en caída',options:{...cth,align:'left'}},{text:'Sponsor',options:cth},{text:cap3(pm.mes),options:cth},{text:cap3(f.mes),options:cth},{text:'Δ',options:cth}]];
+  (caidas.length?caidas.slice(0,10):[]).forEach(o=>ct.push([tr(o.s,'left'),tr((STATE.sucSp&&STATE.sucSp[o.s])||'—'),tr(fmt(o.j)),tr(fmt(o.a)),{text:fmt(o.d),options:{fontFace:BODY,fontSize:10,align:'center',color:NEG}}]));
+  if(!caidas.length)ct.push([tr('Sin caídas','left'),tr(''),tr(''),tr(''),tr('')]);
+  s.addTable(ct,{x:0.6,y:2.15,w:7.0,colW:[3.0,1.4,0.9,0.9,0.8],border:{type:'solid',color:LINE,pt:0.5},rowH:0.3});
+  let zt=[[{text:'En cero / no aparece',options:{...cth,align:'left'}},{text:'Sponsor',options:cth}]];
+  (zero.length?zero.slice(0,10):[]).forEach(o=>zt.push([tr(o.name,'left'),tr((STATE.sucSp&&STATE.sucSp[o.name])||'—')]));
+  if(!zero.length)zt.push([tr('Todas activas','left'),tr('')]);
+  s.addTable(zt,{x:7.9,y:2.15,w:4.8,colW:[3.3,1.5],border:{type:'solid',color:LINE,pt:0.5},rowH:0.3});
+
+  s=bgSlide();head(s,'05 · Cierre','Lectura rápida y plan');
+  const bullets=insights.map(t=>({text:t,options:{bullet:{code:'2022'},fontFace:BODY,fontSize:15,color:INK,paraSpaceAfter:8}}));
+  s.addText(bullets.length?bullets:[{text:'—'}],{x:0.7,y:1.9,w:11.9,h:3.6,valign:'top'});
+  s.addText('Plan del próximo mes: __________________________________________',{x:0.7,y:5.8,w:11.9,h:0.5,fontFace:BODY,fontSize:13,color:MUTE});
+
+  p.writeFile({fileName:`MCI_${supN.replace(/\s+/g,'')}_${f.mes}_${f.anio}.pptx`});
+}
+
+/* diagnóstico de importación */
+function diagBanner(f){
+  const cm=STATE.cm||{};const miss=[];
+  if(!cm.sp)miss.push('Sponsor');if(!cm.anio&&!cm.fec)miss.push('Año');if(!cm.mes&&!cm.fec)miss.push('Mes');if(!cm.sup)miss.push('Supervisor (se dedujo por sucursal)');
+  if(!miss.length)return '';
+  return `<div class="verdict neu" style="margin-bottom:14px"><b>Nota de importación.</b><span>No se encontró la columna: ${miss.join(', ')}. Se usó lo disponible (fecha para derivar periodo, y mapa de sucursales para el supervisor). Si algún dato sale raro, revisá los encabezados del Excel.</span></div>`;
+}
+function noData(f){
+  const cnt=(STATE.diag&&STATE.diag.cnt)||{};
+  // periodos disponibles para el supervisor elegido
+  const rows=STATE.rows;const per={};
+  rows.forEach(r=>{if(!r.anio||!r.mes)return;if(f.sup!=='__ALL__'&&r.sup!==f.sup)return;const k=r.anio+'|'+r.mes;per[k]=(per[k]||0)+1;});
+  const list=Object.entries(per).sort((a,b)=>{const[aa,am]=a[0].split('|'),[ba,bm]=b[0].split('|');return (ba*12+monthIdx(bm))-(aa*12+monthIdx(am));}).slice(0,12);
+  const sups=(STATE.diag&&STATE.diag.sups)||[];
+  const cm=STATE.cm||{};const miss=[];if(!cm.anio&&!cm.fec)miss.push('Año');if(!cm.mes&&!cm.fec)miss.push('Mes');if(!cm.sup)miss.push('Supervisor');
+  return `<div class="panel"><div class="ph"><h3>No hay datos para ${f.sup==='__ALL__'?'Líder':f.sup} · ${cap(f.mes)} ${f.anio}</h3></div>
+    <div class="pb">
+    <p class="hint" style="margin:0 0 12px">Se leyeron <b>${fmt((STATE.diag&&STATE.diag.n)||0)}</b> registros${miss.length?`, pero <b>faltó mapear:</b> ${miss.join(', ')}.`:'.'} Elegí arriba un periodo con datos:</p>
+    ${list.length?`<table><thead><tr><th>Periodo con datos ${f.sup==='__ALL__'?'(todos)':'('+f.sup+')'}</th><th>Registros</th></tr></thead><tbody>
+      ${list.map(([k,n])=>{const[a,m]=k.split('|');return `<tr><td class="b">${cap(m)} ${a}</td><td class="num">${fmt(n)}</td></tr>`}).join('')}
+    </tbody></table>`:`<p class="neg">No se detectó ningún periodo con Año+Mes. Es probable que el Excel no tenga columnas <b>MES/AÑO</b> ni una <b>fecha</b> reconocible. Contame qué columnas trae y lo ajusto.</p>`}
+    ${sups.length&&f.sup!=='__ALL__'?`<p class="hint" style="margin-top:12px">Supervisores en el archivo: ${sups.join(' · ')}. Probá con <b>Todos (Líder)</b> si el tuyo no aparece.</p>`:''}
+    </div></div>`;
+}
+
+/* ============ META MODAL ============ */
+const TIPOS={'recurrente':'Recurrente','única':'Única','unica':'Única','asistencia':'Asistencia'};
+function normTipo(c){return TIPOS[norm(c).toLowerCase()]||norm(c);}
+function num(x){const n=parseFloat(String(x).replace(/[^\d.\-]/g,''));return isNaN(n)?null:n;}
+
+function parseMetaText(text){
+  const out=[];
+  text.split(/\r?\n/).forEach(ln=>{
+    if(!ln.trim()||/^\s*\|?\s*-{2,}/.test(ln))return;
+    let cells=ln.split(/\t|\|/).map(c=>c.replace(/\*\*/g,'').trim());
+    if(cells.length&&cells[0]==='')cells.shift();
+    if(cells.length&&cells[cells.length-1]==='')cells.pop();
+    if(cells.length<6)return;
+    const cat=norm(cells[2]).toLowerCase();
+    if(!TIPOS[cat])return;                       // ignora header y filas Total
+    const vt=num(cells[4]); if(vt==null)return;
+    out.push({emp:canonSp(cells[1]),cat:cells[2],prod:cells[3],vt,fb:num(cells[5])||0});
+  });
+  return out;
+}
+function parseMetaRows(json){ // desde Excel
+  const out=[];
+  const key=(o,names)=>{for(const k of Object.keys(o)){const kk=k.toLowerCase();if(names.some(n=>kk.includes(n)))return k;}return null;};
+  if(!json.length)return out;
+  const s=json[0];
+  const kEmp=key(s,['empresa','sponsor']),kCat=key(s,['categor','tipo']),kProd=key(s,['producto','campaña','campana']),kVt=key(s,['venta','meta vt','vt']),kFb=key(s,['fb','factur']);
+  json.forEach(o=>{
+    const cat=norm(o[kCat]).toLowerCase(); if(!TIPOS[cat])return;
+    const vt=num(o[kVt]); if(vt==null)return;
+    out.push({emp:canonSp(o[kEmp]),cat:o[kCat],prod:o[kProd],vt,fb:num(o[kFb])||0});
+  });
+  return out;
+}
+function aggMeta(rows){
+  const bySp={},byTipo={};
+  rows.forEach(r=>{
+    (bySp[r.emp]=bySp[r.emp]||{vt:0,fb:0});bySp[r.emp].vt+=r.vt;bySp[r.emp].fb+=r.fb;
+    const t=normTipo(r.cat);(byTipo[t]=byTipo[t]||{vt:0,fb:0});byTipo[t].vt+=r.vt;byTipo[t].fb+=r.fb;
+  });
+  return {bySp,byTipo,n:rows.length,totVt:rows.reduce((s,r)=>s+r.vt,0)};
+}
+let META_STAGE=null;
+function showMetaPrev(agg){
+  if(!agg||!agg.n){$('#metaPrev').innerHTML='<span class="neg">No se reconocieron filas de detalle. Revisá el formato.</span>';META_STAGE=null;return;}
+  META_STAGE=agg;
+  const sps=Object.keys(agg.bySp).sort();
+  $('#metaPrev').innerHTML=`<div class="metaok">✔ ${agg.n} productos · meta total ${fmt(agg.totVt)} pólizas</div>
+    <table style="margin-top:10px"><thead><tr><th>Sponsor</th><th>Meta VT</th><th>Meta FB</th></tr></thead><tbody>
+    ${sps.map(s=>`<tr><td class="b"><span class="sdot" style="background:${spcol(s)}"></span>${s}</td><td class="num b">${fmt(agg.bySp[s].vt)}</td><td class="num">$${fmt(agg.bySp[s].fb)}</td></tr>`).join('')}
+    </tbody></table>`;
+}
+// modal wiring
+const mm=$('#metaModal');
+function openMeta(){const f=F();$('#metaCtx').textContent=(f.sup==='__ALL__'?'Líder':f.sup)+' · '+cap(f.mes)+' '+f.anio;
+  const ov=STATE.metaOv[metaKey(f)];$('#metaPrev').innerHTML=ov?`<div class="metaok">Meta personalizada activa (${fmt(ov.totVt||0)} pólizas). Podés reemplazarla o volver a las del sistema.</div>`:'';META_STAGE=null;mm.classList.remove('hidden');}
+$('#btnMeta').onclick=()=>{ if(!STATE.ready){alert('Primero importá el reporte de colocación.');return;} openMeta(); };
+$('#metaX').onclick=()=>mm.classList.add('hidden');
+mm.addEventListener('click',e=>{if(e.target===mm)mm.classList.add('hidden')});
+$$('#metaModal .seg button').forEach(b=>b.onclick=()=>{$$('#metaModal .seg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  const paste=b.dataset.mt==='paste';$('#metaText').classList.toggle('hidden',!paste);$('#metaDrop').classList.toggle('hidden',paste);});
+$('#metaText').addEventListener('input',()=>showMetaPrev(aggMeta(parseMetaText($('#metaText').value))));
+$('#metaFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=ev=>{try{const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});const js=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:null});showMetaPrev(aggMeta(parseMetaRows(js)));}catch(err){$('#metaPrev').innerHTML='<span class="neg">Error: '+err.message+'</span>';}};
+  rd.readAsArrayBuffer(f);});
+$('#metaSave').onclick=()=>{ if(!META_STAGE){$('#metaPrev').innerHTML='<span class="neg">No hay meta para guardar. Pegá la tabla o subí el Excel.</span>';return;}
+  const f=F();STATE.metaOv[metaKey(f)]=META_STAGE;persistOv();mm.classList.add('hidden');$('#metaText').value='';render(); };
+$('#metaClear').onclick=()=>{const f=F();delete STATE.metaOv[metaKey(f)];persistOv();mm.classList.add('hidden');render();};
+
+function persistOv(){try{localStorage.setItem('asys_metaov',JSON.stringify(STATE.metaOv));}catch(e){} if(STATE.ready&&STATE.rows.length){idbSet('data',{rows:STATE.rows,anios:STATE.anios,ciNames:STATE.cm,sheet:STATE.sheetInfo&&STATE.sheetInfo.sheet,hr:STATE.sheetInfo&&STATE.sheetInfo.headerRow,savedAt:STATE.savedAt||Date.now(),metaOv:STATE.metaOv});}}
+function loadOv(){try{const s=localStorage.getItem('asys_metaov');if(s)STATE.metaOv=JSON.parse(s)||{};}catch(e){}}
+function updateMetaBtn(){const on=!!STATE.metaOv[metaKey(F())];$('#btnMeta').classList.toggle('metaov-on',on);$('#btnMeta').textContent=on?'Meta ✓':'Meta';}
+
+/* ===== Auto-guardado (IndexedDB) ===== */
+const IDB_NAME='asys_panel_db',IDB_STORE='kv';
+function idbOpen(){return new Promise((res,rej)=>{try{const rq=indexedDB.open(IDB_NAME,1);rq.onupgradeneeded=()=>rq.result.createObjectStore(IDB_STORE);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);}catch(e){rej(e);}});}
+async function idbSet(k,v){try{const db=await idbOpen();return await new Promise(res=>{const tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).put(v,k);tx.oncomplete=()=>{savedFlag(v.savedAt);res(true)};tx.onerror=()=>res(false);});}catch(e){return false;}}
+async function idbGet(k){try{const db=await idbOpen();return await new Promise(res=>{const tx=db.transaction(IDB_STORE,'readonly');const rq=tx.objectStore(IDB_STORE).get(k);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>res(null);});}catch(e){return null;}}
+async function idbClear(){try{const db=await idbOpen();return await new Promise(res=>{const tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).clear();tx.oncomplete=()=>res(true);tx.onerror=()=>res(false);});}catch(e){return false;}}
+function savedFlag(ts){const el=$('#saveInfo');if(el){const d=ts?new Date(ts):new Date();el.innerHTML='💾 Guardado '+d.toLocaleDateString('es-CR')+' '+d.toLocaleTimeString('es-CR',{hour:'2-digit',minute:'2-digit'})+' · <a href="#" id="clrData" style="color:#8FB8BC">borrar</a>';const c=$('#clrData');if(c)c.onclick=async(e)=>{e.preventDefault();if(confirm('¿Borrar los datos guardados en este equipo?')){await idbClear();try{localStorage.removeItem('asys_metaov')}catch(_){}location.reload();}};}}
+async function autoLoad(){const cached=await idbGet('data');if(STATE._freshImport)return;
+  if(cached&&cached.rows&&cached.rows.length){
+    const hasDia=(cached.rows[0]&&('dia' in cached.rows[0]))||cached.rows.some(r=>r&&r.dia>0);
+    if(!hasDia){$('#loadmsg').innerHTML='Tus datos guardados son de una versión anterior (sin el <b>día del mes</b>).<br>Importá el Excel de ventas para habilitar el <b>detalle diario</b> del VT_DIARIA.';return;}
+    if(cached.metaOv)STATE.metaOv=cached.metaOv;showProg('Cargando datos guardados…');
+    setTimeout(()=>{if(!STATE._freshImport)finalize(cached.rows,cached.anios,cached.ciNames,cached.sheet,cached.hr,cached.savedAt);},20);
+  }
+}
+autoLoad();
+loadBitacora();
+</script>
+</body></html>
